@@ -25,10 +25,20 @@ kotlin {
         browser()
         binaries.executable()
     }
+
+    applyDefaultHierarchyTemplate()
     
     sourceSets {
-        val desktopMain by getting
-        
+        val skikoMain by creating {
+            dependsOn(commonMain.get())
+        }
+        val desktopMain by getting {
+            dependsOn(skikoMain)
+        }
+        val wasmJsMain by getting {
+            dependsOn(skikoMain)
+        }
+
         androidMain.dependencies {
             implementation(compose.preview)
         }
@@ -50,7 +60,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.louiscad.playground.compose.videogen.lib"
+    namespace = "com.louiscad.playground.compose.videogen.borders.feather"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {

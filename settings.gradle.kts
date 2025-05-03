@@ -29,4 +29,4 @@ dependencyResolutionManagement {
 }
 
 include(":composeApp")
-include(":composeLib")
+include(":feather-borders")

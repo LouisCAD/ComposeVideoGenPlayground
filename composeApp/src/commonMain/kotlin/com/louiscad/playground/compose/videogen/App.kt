@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.louiscad.playground.compose.videogen.lib.LibraryComponent
+import com.louiscad.playground.compose.videogen.library.CoolCounterPreview
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -21,6 +22,8 @@ import composevideogenplayground.composeapp.generated.resources.compose_multipla
 @Preview
 fun App() {
     MaterialTheme {
+        CoolCounterPreview()
+        return@MaterialTheme
         var showContent by remember { mutableStateOf(false) }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Button(onClick = { showContent = !showContent }) {

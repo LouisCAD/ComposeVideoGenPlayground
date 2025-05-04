@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalSplittiesApi::class)
-
 package com.louiscad.playground.compose.videogen.lib.experiments
 
 import androidx.compose.runtime.Composable
@@ -17,7 +15,6 @@ import org.bytedeco.javacv.Java2DFrameConverter
 import org.jetbrains.skia.Image
 import org.jetbrains.skiko.toImage
 import splitties.coroutines.repeatWhileActive
-import splitties.experimental.ExperimentalSplittiesApi
 import java.awt.image.BufferedImage
 import java.io.File
 import kotlin.time.Duration

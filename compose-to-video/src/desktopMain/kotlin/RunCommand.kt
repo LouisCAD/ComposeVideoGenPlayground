@@ -10,34 +10,35 @@ private val executionDir = File(".")
 
 class NonZeroExitCodeException(val value: Int) : Exception("Non zero exit value: $value")
 
-fun String.execute(
+@Throws(NonZeroExitCodeException::class)
+fun String.executeBlocking(
     workingDir: File = executionDir,
     timeout: Duration = 60.minutes
 ): String = processBuilder(
     rawCommand = this,
     workingDir = workingDir
-).execute(timeout)
+).executeBlocking(timeout)
 
-fun String.executeAndPrint(
+fun String.executeAndPrintBlocking(
     workingDir: File = executionDir,
     timeout: Duration = 60.minutes
 ) {
-    processBuilder(rawCommand = this, workingDir = workingDir).executeAndPrint(timeout)
+    processBuilder(rawCommand = this, workingDir = workingDir).executeAndPrintBlocking(timeout)
 }
 
-fun List<String>.execute(
+fun List<String>.executeBlocking(
     workingDir: File = executionDir,
     timeout: Duration = 60.minutes
 ): String = processBuilder(
     command = this,
     workingDir = workingDir
-).execute(timeout)
+).executeBlocking(timeout)
 
-fun List<String>.executeAndPrint(
+fun List<String>.executeAndPrintBlocking(
     workingDir: File = executionDir,
     timeout: Duration = 60.minutes
 ) {
-    processBuilder(command = this, workingDir = workingDir).executeAndPrint(timeout)
+    processBuilder(command = this, workingDir = workingDir).executeAndPrintBlocking(timeout)
 }
 
 private val rawCommandPattern = Pattern.compile("\"([^\"]*)\"|(\\S+)")
@@ -61,7 +62,7 @@ private fun processBuilder(
     workingDir = workingDir
 )
 
-private fun ProcessBuilder.execute(timeout: Duration): String {
+private fun ProcessBuilder.executeBlocking(timeout: Duration): String {
     val proc = start()
     proc.waitFor(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
     return proc.inputStream.use { it.bufferedReader().readText() }.also {
@@ -72,7 +73,7 @@ private fun ProcessBuilder.execute(timeout: Duration): String {
     }
 }
 
-private fun ProcessBuilder.executeAndPrint(timeout: Duration) {
+private fun ProcessBuilder.executeAndPrintBlocking(timeout: Duration) {
     val proc = redirectInput(ProcessBuilder.Redirect.INHERIT)
         .redirectOutput(ProcessBuilder.Redirect.INHERIT)
         .redirectError(ProcessBuilder.Redirect.INHERIT)

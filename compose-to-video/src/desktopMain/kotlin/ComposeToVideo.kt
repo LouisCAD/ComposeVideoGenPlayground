@@ -1,8 +1,9 @@
-@file:OptIn(ExperimentalSplittiesApi::class)
+@file:OptIn(ExperimentalAtomicApi::class)
 
 package com.louiscad.playground.compose.videogen.lib
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.use
@@ -17,9 +18,13 @@ import org.bytedeco.javacpp.Loader
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import splitties.coroutines.raceOf
-import splitties.experimental.ExperimentalSplittiesApi
+import splitties.coroutines.repeatWhileActive
 import java.io.File
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -41,6 +46,8 @@ suspend fun recordComposableAsVideo(
     size: IntSize,
     outputDir: File,
     duration: Duration,
+    onFrameWritten: (writtenFrames: Int, totalFrames: Int) -> Unit,
+    convertingWebpsToVideo: suspend (terminalOutput: Flow<String>) -> Unit,
     content: @Composable () -> Unit
 ) {
     outputDir.mkdirs()
@@ -49,26 +56,51 @@ suspend fun recordComposableAsVideo(
         height = size.height
     ).use { scene ->
         scene.setContent(content)
-        val images = scene.images(
-            cutAt = duration,
-            interval = 1.seconds / 60
-        )
+        val interval = 1.seconds / 60
+        val expectedImagesCount = expectedImagesCount(duration, interval)
+        val images = scene.images(cutAt = duration, interval = interval)
+        val imagesWrittenCount = AtomicInt(0)
         val time = measureTime {
-            images.recordAllParallelizedInto(outputDir)
+            raceOf({
+                images.recordAllParallelizedInto(outputDir, onImageWritten = {
+                    imagesWrittenCount.incrementAndFetch()
+                })
+            }, {
+                repeatWhileActive {
+                    withFrameNanos {
+                        onFrameWritten(imagesWrittenCount.load(), expectedImagesCount)
+                    }
+                }
+            })
         }
         println("Took $time to generate and write WEBPs")
         // This helped: https://ottverse.com/ffmpeg-convert-to-apple-prores-422-4444-hq/
-        val ffmpeg = Loader.load(ffmpeg::class.java)
+        val ffmpeg = try {
+            //TODO: Support Windows properly
+            runInterruptible(Dispatchers.IO) { "which ffmpeg".executeBlocking() }
+            "ffmpeg"
+        } catch (e: NonZeroExitCodeException) {
+            Loader.load(ffmpeg::class.java)
+        }
         val outputFileRelativePath = "output.mov"
         val conversionCommand = "$ffmpeg -framerate 60 -i %d.webp -c:v prores_ks -profile:v 4 " +
                                 "-pix_fmt yuva444p10le -alpha_bits 16 -r 60 -movflags +faststart $outputFileRelativePath"
         measureTime {
-            conversionCommand.executeAndPrint(workingDir = outputDir)
+            convertingWebpsToVideo(conversionCommand.commandExecutionLines(workingDir = outputDir))
         }.also { println("Took $it to build video from WEBPs") }
         outputDir.list()!!.forEach {
             if (it.endsWith(".webp")) outputDir.resolve(it).delete()
         }
     }
+}
+
+private fun expectedImagesCount(
+    duration: Duration,
+    interval: Duration
+): Int {
+    val intervalNanos = interval.inWholeNanoseconds
+    val limitNanos = duration.inWholeNanoseconds
+    return (limitNanos / intervalNanos).toInt()
 }
 
 private fun ImageComposeScene.images(
@@ -83,6 +115,9 @@ private fun ImageComposeScene.images(
         currentCoroutineContext().ensureActive()
         if (lastTimeNanos > limitNanos) return@flow
         if (hasInvalidations() || lastImage == null) {
+            // We render twice because the first render is sometimes not settled as it should.
+            // See
+            render(lastTimeNanos)
             lastImage = render(lastTimeNanos)
         } else {
             println("Skipping render because it wasn't invalidated.")
@@ -120,7 +155,10 @@ private suspend fun Flow<Image>.recordAllInto(outputDir: File) {
     }
 }
 
-private suspend fun Flow<Image>.recordAllParallelizedInto(outputDir: File) {
+private suspend fun Flow<Image>.recordAllParallelizedInto(
+    outputDir: File,
+    onImageWritten: () -> Unit
+) {
     val generatedImages = withIndex().measure { upstreamDuration, downstreamDuration ->
         println("UP  :$upstreamDuration")
         println("DOWN:$downstreamDuration")
@@ -144,6 +182,7 @@ private suspend fun Flow<Image>.recordAllParallelizedInto(outputDir: File) {
                 Dispatchers.IO {
                     measureTime {
                         file.writeBytes(bytes)
+                        onImageWritten()
                     }.also { writeTimes.send(it) }
                 }
             }

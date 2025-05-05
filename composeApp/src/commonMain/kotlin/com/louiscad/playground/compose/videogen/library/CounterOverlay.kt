@@ -65,19 +65,19 @@ fun CounterOverlay(numberState: IntState) {
 }
 
 @Composable
-private fun rememberAutoAdvancingNumber(interval: Duration): MutableIntState {
-    return remember { mutableIntStateOf(0) }.also {
-        var number by it
-        LaunchedEffect(Unit) {
-            val intervalNanos = interval.inWholeNanoseconds
-            var nanosOfLastBump = 0L
-            while (true) {
-                withFrameNanos { nanos ->
-                    val nanosSinceLastBump = nanos - nanosOfLastBump
-                    if (nanosSinceLastBump >= intervalNanos) {
-                        nanosOfLastBump = nanos
-                        number++
-                    }
+private fun rememberAutoAdvancingNumber(interval: Duration): IntState = remember {
+    mutableIntStateOf(0)
+}.also {
+    var number by it
+    LaunchedEffect(Unit) {
+        val intervalNanos = interval.inWholeNanoseconds
+        var nanosOfLastBump = 0L
+        while (true) {
+            withFrameNanos { nanos ->
+                val nanosSinceLastBump = nanos - nanosOfLastBump
+                if (nanosSinceLastBump >= intervalNanos) {
+                    nanosOfLastBump = nanos
+                    number++
                 }
             }
         }

@@ -24,7 +24,6 @@ import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -110,19 +109,13 @@ private fun ImageComposeScene.images(
     val intervalNanos = interval.inWholeNanoseconds
     val limitNanos = cutAt.inWholeNanoseconds
     var lastTimeNanos = 0L
-    var lastImage: Image? = null
     while (true) {
         currentCoroutineContext().ensureActive()
         if (lastTimeNanos > limitNanos) return@flow
-        if (hasInvalidations() || lastImage == null) {
-            // We render twice because the first render is sometimes not settled as it should.
-            // See
-            render(lastTimeNanos)
-            lastImage = render(lastTimeNanos)
-        } else {
-            println("Skipping render because it wasn't invalidated.")
-        }
-        emit(lastImage)
+        // We render twice because the first render is sometimes not settled as it should.
+        // See this: https://kotlinlang.slack.com/archives/C01D6HTPATV/p1746482154335809
+        render(lastTimeNanos)
+        emit(render(lastTimeNanos))
         lastTimeNanos += intervalNanos
     }
 }

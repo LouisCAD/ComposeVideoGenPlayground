@@ -56,7 +56,7 @@ fun CounterOverlay(numberState: IntState) {
                 Text(
                     text = "$num".padStart(length = 2, padChar = '0'),
                     fontSize = 50.sp,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )

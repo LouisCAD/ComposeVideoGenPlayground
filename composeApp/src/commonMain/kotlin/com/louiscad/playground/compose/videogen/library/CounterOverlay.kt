@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
+import com.louiscad.playground.compose.videogen.core.helpers.rememberAutoAdvancingNumber
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.sign
@@ -59,26 +60,6 @@ fun CounterOverlay(numberState: IntState) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun rememberAutoAdvancingNumber(interval: Duration): IntState = remember {
-    mutableIntStateOf(0)
-}.also {
-    var number by it
-    LaunchedEffect(Unit) {
-        val intervalNanos = interval.inWholeNanoseconds
-        var nanosOfLastBump = 0L
-        while (true) {
-            withFrameNanos { nanos ->
-                val nanosSinceLastBump = nanos - nanosOfLastBump
-                if (nanosSinceLastBump >= intervalNanos) {
-                    nanosOfLastBump = nanos
-                    number++
-                }
             }
         }
     }

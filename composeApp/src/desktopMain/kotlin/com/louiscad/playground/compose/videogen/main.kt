@@ -45,9 +45,9 @@ fun main() = application {
         title = "Video Generator prototype!",
     ) {
         MenuBar {
-            this.Menu("🪟") {
-                this.Item("Close", onClick = { minimizeRequests() })
-                this.Item("Quit", onClick = ::exitApplication)
+            Menu("🪟") {
+                Item("Close", onClick = { minimizeRequests() })
+                Item("Quit", onClick = ::exitApplication)
             }
         }
         LaunchedEffect(Unit) {

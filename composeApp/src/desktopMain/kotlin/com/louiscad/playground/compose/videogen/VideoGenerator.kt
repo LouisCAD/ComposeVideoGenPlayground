@@ -68,7 +68,8 @@ fun VideoGenerator(
                     contentToRecord()
                 }
             } catch (e: Exception) {
-                println(e)
+                println(e.message ?: e.toString())
+                e.printStackTrace()
             }
             value = false
         }

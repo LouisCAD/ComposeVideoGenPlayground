@@ -1,3 +1,5 @@
+package com.louiscad.playground.compose.videogen.core
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.IntState
 import androidx.compose.runtime.LaunchedEffect

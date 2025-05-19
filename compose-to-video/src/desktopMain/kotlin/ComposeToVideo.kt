@@ -12,17 +12,20 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.withIndex
 import org.bytedeco.ffmpeg.ffmpeg
 import org.bytedeco.javacpp.Loader
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
+import org.jetbrains.skiko.MainUIDispatcher
 import splitties.coroutines.raceOf
 import splitties.coroutines.repeatWhileActive
 import java.io.File
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
@@ -48,11 +51,19 @@ suspend fun recordComposableAsVideo(
     onFrameWritten: (writtenFrames: Int, totalFrames: Int) -> Unit,
     convertingWebpsToVideo: suspend (terminalOutput: Flow<String>) -> Unit,
     content: @Composable () -> Unit
-) {
+): Unit = withContext(MainUIDispatcher) {
     outputDir.mkdirs()
+    val outputFileRelativePath = "000_output.mov"
+    Dispatchers.IO {
+        outputDir.list()!!.forEach {
+            if (it.endsWith(".webp")) outputDir.resolve(it).delete()
+        }
+        outputDir.resolve(outputFileRelativePath).delete()
+    }
     ImageComposeScene(
         width = size.width,
-        height = size.height
+        height = size.height,
+        coroutineContext = coroutineContext[ContinuationInterceptor]!!
     ).use { scene ->
         scene.setContent(content)
         val interval = 1.seconds / 60
@@ -115,10 +126,12 @@ private fun ImageComposeScene.images(
         // We render twice because the first render is sometimes not settled as it should.
         // See this: https://kotlinlang.slack.com/archives/C01D6HTPATV/p1746482154335809
         render(lastTimeNanos)
+        yield()
         emit(render(lastTimeNanos))
         lastTimeNanos += intervalNanos
     }
-}
+}.flowOn(MainUIDispatcher) // Wrong frames can be shown otherwise…
+// See https://kotlinlang.slack.com/archives/C01D6HTPATV/p1747657487445149?thread_ts=1746482154.335809&cid=C01D6HTPATV
 
 private fun ImageComposeScene.imagesOrNull(
     cutAt: Duration,

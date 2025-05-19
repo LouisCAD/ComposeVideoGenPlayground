@@ -27,7 +27,7 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.louiscad.playground.compose.videogen.lib.recordComposableAsVideo
+import com.louiscad.playground.compose.videogen.core.recordComposableAsVideo
 import splitties.coroutines.rememberCallableState
 import splitties.coroutines.repeatWhileActive
 import java.net.URI

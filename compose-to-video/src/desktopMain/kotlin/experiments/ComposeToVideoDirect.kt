@@ -1,11 +1,11 @@
-package com.louiscad.playground.compose.videogen.lib.experiments
+package com.louiscad.playground.compose.videogen.core.experiments
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.use
-import com.louiscad.playground.compose.videogen.lib.measure
+import com.louiscad.playground.compose.videogen.core.measure
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.bytedeco.ffmpeg.global.avcodec

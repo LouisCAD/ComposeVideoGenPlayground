@@ -1,4 +1,4 @@
-package com.louiscad.playground.compose.videogen.lib
+package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize

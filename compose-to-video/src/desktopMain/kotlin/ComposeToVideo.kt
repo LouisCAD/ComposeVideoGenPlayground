@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalAtomicApi::class)
 
-package com.louiscad.playground.compose.videogen.lib
+package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.withFrameNanos

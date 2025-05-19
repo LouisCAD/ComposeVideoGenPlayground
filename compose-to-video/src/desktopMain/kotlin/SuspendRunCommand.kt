@@ -1,4 +1,4 @@
-package com.louiscad.playground.compose.videogen.lib
+package com.louiscad.playground.compose.videogen.core
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable

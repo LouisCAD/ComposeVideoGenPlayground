@@ -1,4 +1,4 @@
-package com.louiscad.playground.compose.videogen.lib
+package com.louiscad.playground.compose.videogen.core
 
 import java.io.File
 import java.util.concurrent.TimeUnit

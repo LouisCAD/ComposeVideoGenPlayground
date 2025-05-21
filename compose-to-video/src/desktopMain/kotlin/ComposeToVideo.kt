@@ -210,19 +210,3 @@ suspend fun <T> Flow<T>.collectParallel(
     }
 }
 
-suspend fun <T> Flow<T>.collectParallelWithChannel(
-    maxParallelism: Int,
-    bufferCapacity: Int = maxParallelism,
-    consumeElements: suspend (elements: ReceiveChannel<T>) -> Unit,
-) {
-    coroutineScope {
-        val inputChannel = Channel<T>(capacity = bufferCapacity)
-        launch {
-            collect { inputChannel.send(it) }
-            inputChannel.close()
-        }
-        for (i in 0..<maxParallelism) launch {
-            consumeElements(inputChannel)
-        }
-    }
-}

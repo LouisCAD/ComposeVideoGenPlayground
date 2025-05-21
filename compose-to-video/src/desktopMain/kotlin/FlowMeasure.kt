@@ -5,7 +5,10 @@ import kotlinx.coroutines.flow.flow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
-fun <T> Flow<T>.measure(onComplete:(upstreamDuration: Duration, downstreamDuration:Duration) -> Unit): Flow<T> = flow {
+fun <T> Flow<T>.measure(onComplete: (
+    upstreamDuration: Duration,
+    downstreamDuration: Duration
+) -> Unit): Flow<T> = flow {
     var collectNanos = 0L
     var emitNanos = 0L
     var timeBeforeCollect: Long = System.nanoTime()

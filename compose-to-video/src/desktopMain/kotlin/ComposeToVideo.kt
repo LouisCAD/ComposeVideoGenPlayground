@@ -133,21 +133,6 @@ private fun ImageComposeScene.images(
 }.flowOn(MainUIDispatcher) // Wrong frames can be shown otherwise…
 // See https://kotlinlang.slack.com/archives/C01D6HTPATV/p1747657487445149?thread_ts=1746482154.335809&cid=C01D6HTPATV
 
-private fun ImageComposeScene.imagesOrNull(
-    cutAt: Duration,
-    interval: Duration
-): Flow<Image?> = flow {
-    val intervalNanos = interval.inWholeNanoseconds
-    val limitNanos = cutAt.inWholeNanoseconds
-    var lastTimeNanos = 0L
-    while (true) {
-        currentCoroutineContext().ensureActive()
-        if (lastTimeNanos > limitNanos) return@flow
-        emit(if (hasInvalidations()) render(lastTimeNanos) else null)
-        lastTimeNanos += intervalNanos
-    }
-}
-
 private suspend fun Flow<Image>.recordAllInto(outputDir: File) {
     var imgNumber = 0
     measure { upstreamDuration, downstreamDuration ->

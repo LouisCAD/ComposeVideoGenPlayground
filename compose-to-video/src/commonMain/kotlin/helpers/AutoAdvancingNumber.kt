@@ -15,15 +15,15 @@ fun rememberAutoAdvancingNumber(interval: Duration): IntState = remember {
     mutableIntStateOf(0)
 }.also {
     var number by it
-    LaunchedEffect(Unit) {
+    LaunchedEffect(it) {
         val intervalNanos = interval.inWholeNanoseconds
         var nanosOfLastBump = 0L
         while (true) {
             withFrameNanos { nanos ->
                 val nanosSinceLastBump = nanos - nanosOfLastBump
                 if (nanosSinceLastBump >= intervalNanos) {
-                    nanosOfLastBump = nanos
                     number++
+                    nanosOfLastBump = nanos
                 }
             }
         }

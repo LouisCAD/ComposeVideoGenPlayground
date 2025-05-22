@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.withIndex
+import kotlinx.coroutines.invoke
 import org.bytedeco.ffmpeg.ffmpeg
 import org.bytedeco.javacpp.Loader
 import org.jetbrains.skia.EncodedImageFormat

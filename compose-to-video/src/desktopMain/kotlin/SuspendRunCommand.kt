@@ -8,17 +8,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import splitties.coroutines.raceOf
 import java.io.File
 import java.util.regex.Pattern
+import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.seconds
 
 private val executionDir = File(".")
 
-// For Kotlin/Native, see posix version: https://stackoverflow.com/a/64311102/4433326
+// For Kotlin/Native, see the posix version: https://stackoverflow.com/a/64311102/4433326
 
 fun String.commandExecutionLines(
     workingDir: File = executionDir,
@@ -56,27 +58,50 @@ private fun processBuilder(
     workingDir = workingDir
 )
 
+private suspend fun Process.killOrForceKill(waitForForceKill: suspend () -> Unit) {
+    val neededToBeDestroyForcibly = raceOf({
+        destroy()
+        runInterruptible(Dispatchers.IO) { waitFor() }
+        false
+    }, {
+        waitForForceKill()
+        destroyForcibly()
+        true
+    })
+    if (neededToBeDestroyForcibly) {
+        // Wait for the process termination to complete.
+        runInterruptible(Dispatchers.IO) { waitFor() }
+    }
+}
+
 private fun ProcessBuilder.execute(waitForForceKill: suspend () -> Unit): Flow<String> = channelFlow {
-    val process = redirectErrorStream(true).start()
-    try {
+    val process by lazy { redirectErrorStream(true).start() }
+    // We use a lazy delegate because we want the shutdown hook to be registered before
+    // the start call actually takes place.
+    // That way, even if the JVM is shutdown at the worst time,
+    // we are still able to have access to the process and kill it.
+    val shutdownHook = thread(start = false) {
+        runBlocking { process.killOrForceKill(waitForForceKill) }
+    }
+    val runtime = Runtime.getRuntime()
+    runtime.addShutdownHook(shutdownHook)
+    launch {
         process.inputStream.use { stream ->
             stream.buffered().reader().useLines { lines ->
                 lines.forEach { line -> send(line) }
             }
         }
+    }
+    val exitValue = try {
+        runInterruptible { process.waitFor() }
     } catch (e: Throwable) {
         withContext(NonCancellable) {
-            raceOf({
-                process.destroy()
-                process.onExit().await()
-            }, {
-                waitForForceKill()
-                process.destroyForcibly()
-            })
+            process.killOrForceKill(waitForForceKill)
         }
         throw e
+    } finally {
+        runtime.removeShutdownHook(shutdownHook)
     }
-    val exitValue = runInterruptible { process.waitFor() }
     if (exitValue != 0) throw NonZeroExitCodeException(exitValue)
 }.flowOn(Dispatchers.IO).buffer(Channel.UNLIMITED)
 

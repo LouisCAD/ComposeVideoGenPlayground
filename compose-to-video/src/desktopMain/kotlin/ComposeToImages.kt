@@ -62,8 +62,7 @@ suspend fun recordComposableAsImages(
             coroutineContext = coroutineContext[ContinuationInterceptor]!!
         ).use { scene ->
             scene.setContent(content)
-            val interval = 1.seconds / framesPerSecond
-            val images = scene.images(cutAt = duration, interval = interval)
+            val images = scene.images(cutAt = duration, framesPerSecond = framesPerSecond)
             val imagesWrittenCount = AtomicInt(0)
             Dispatchers.Default {
                 raceOf({
@@ -84,20 +83,27 @@ suspend fun recordComposableAsImages(
 
 private fun ImageComposeScene.images(
     cutAt: Duration,
-    interval: Duration
+    framesPerSecond: Int
 ): Flow<Image> = flow {
-    val intervalNanos = interval.inWholeNanoseconds
     val limitNanos = cutAt.inWholeNanoseconds
-    var lastTimeNanos = 0L
+    var frameIndex = 0
+    val oneSecondNanos = 1.seconds.inWholeNanoseconds
+    var currentSecond = 0
     while (true) {
         currentCoroutineContext().ensureActive()
-        if (lastTimeNanos > limitNanos) return@flow
+        val nanosForFrameIndex: Long = oneSecondNanos * frameIndex / framesPerSecond
+        val currentNanos = currentSecond.seconds.inWholeNanoseconds + nanosForFrameIndex
+        if (currentNanos >= limitNanos) return@flow
         // We render twice because the first render is sometimes not settled as it should.
         // See this: https://kotlinlang.slack.com/archives/C01D6HTPATV/p1746482154335809
-        render(lastTimeNanos)
+        render(currentNanos)
         yield()
-        emit(render(lastTimeNanos))
-        lastTimeNanos += intervalNanos
+        emit(render(currentNanos))
+        frameIndex++
+        if (frameIndex == framesPerSecond) {
+            frameIndex = 0
+            currentSecond++
+        }
     }
 }.flowOn(MainUIDispatcher) // Wrong frames can be shown otherwise, see the comments below:
 // Using `MainUiDispatcher` is needed to work around threading issues in `ImageComposeScene`.

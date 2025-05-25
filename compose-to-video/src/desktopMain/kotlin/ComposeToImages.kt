@@ -110,19 +110,6 @@ private fun ImageComposeScene.images(
 //   https://kotlinlang.slack.com/archives/C01D6HTPATV/p1747657487445149?thread_ts=1746482154.335809&cid=C01D6HTPATV
 
 
-private suspend fun Flow<Image>.recordAllInto(outputDir: File) {
-    var imgNumber = 0
-    measure { upstreamDuration, downstreamDuration ->
-        println("UP :$upstreamDuration")
-        println("DOWN :$downstreamDuration")
-    }.collect { skiaImage ->
-        skiaImage.use {
-            outputDir.resolve("$imgNumber.png").writeBytes(it.encodeToData()!!.bytes)
-            imgNumber++
-        }
-    }
-}
-
 private suspend fun Flow<Image>.recordAllParallelizedInto(
     outputDir: File,
     progressListener: FramesRecordingProgressListener = FramesRecordingProgressListener { _, _ -> }

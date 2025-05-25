@@ -41,6 +41,7 @@ fun VideoGenerator(
 ) {
     var writtenFrames by remember { mutableIntStateOf(0) }
     var totalFrames by remember { mutableIntStateOf(0) }
+    var outputName by remember { mutableStateOf("compose_video") }
     val outputPathPicking = rememberCallableState<String>()
     val isRecording by produceState(initialValue = false) {
         repeatWhileActive {
@@ -53,6 +54,7 @@ fun VideoGenerator(
                 recordComposableAsVideo(
                     size = defaultSize,
                     outputDir = outputDir,
+                    outputFileNameWithoutExtension = outputName,
                     duration = 10.seconds,
                     onFrameWritten = { written, total ->
                         writtenFrames = written

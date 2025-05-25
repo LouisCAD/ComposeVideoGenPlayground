@@ -8,7 +8,6 @@ import com.louiscad.playground.compose.videogen.core.extensions.compose.onEachFr
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.invoke
 import org.bytedeco.ffmpeg.ffmpeg
 import org.bytedeco.javacpp.Loader
 import java.io.File
@@ -32,24 +31,35 @@ import kotlin.time.measureTime
  */
 suspend fun recordComposableAsVideo(
     size: IntSize,
+    framesPerSecond: Int = 60,
     outputDir: File,
+    outputFileNameWithoutExtension: String,
     duration: Duration,
     onFrameWritten: (writtenFrames: Int, totalFrames: Int) -> Unit,
     convertingWebpsToVideo: suspend (terminalOutput: Flow<String>) -> Unit,
     content: @Composable () -> Unit
 ) {
-    outputDir.mkdirs()
-    val outputFileRelativePath = "000_output.mov"
-    Dispatchers.IO {
-        outputDir.list()!!.forEach {
-            if (it.endsWith(".webp")) outputDir.resolve(it).delete()
+    val outputFileRelativePath = "$outputFileNameWithoutExtension.mov"
+    val freshDir: Boolean
+    val tmpDirForWebps: File
+    withContext(Dispatchers.IO) {
+        freshDir = outputDir.mkdirs()
+        tmpDirForWebps = outputDir.resolve("tmp_webps").also {
+            val wasCreated = it.mkdirs()
+            if (wasCreated.not()) it.deleteRecursively()
+            it.deleteOnExit()
         }
-        outputDir.resolve(outputFileRelativePath).delete()
+        if (freshDir.not()) {
+            val outputFile = outputDir.resolve(outputFileRelativePath)
+            if (outputFile.exists()) outputFile.delete()
+        }
     }
+    val recordingDurationSummary: FramesRecordingDurationSummary
     val generationDuration: Duration = measureTime {
-        recordComposableAsImages(
+        recordingDurationSummary = recordComposableAsImages(
             size = size,
-            outputDir = outputDir,
+            framesPerSecond = framesPerSecond,
+            outputDir = tmpDirForWebps,
             duration = duration,
             progressHandler = { totalFrames, getWrittenFrames ->
                 onEachFrame { onFrameWritten(getWrittenFrames(), totalFrames) }
@@ -69,8 +79,19 @@ suspend fun recordComposableAsVideo(
     } catch (_: NonZeroExitCodeException) {
         Loader.load(ffmpeg::class.java)
     }
-    val conversionCommand = "$ffmpeg -framerate 60 -i %d.webp -c:v prores_ks -profile:v 4 " +
-            "-pix_fmt yuva444p10le -alpha_bits 16 -r 60 -movflags +faststart $outputFileRelativePath"
+    val fileSeparator = File.separatorChar
+    val conversionCommand: String = buildList {
+        add(ffmpeg)
+        add("-framerate $framesPerSecond")
+        add("-i ${tmpDirForWebps.name}$fileSeparator%d.webp")
+        add("-c:v prores_ks")
+        add("-profile:v 4")
+        add("-pix_fmt yuva444p10le")
+        add("-alpha_bits 16")
+        add("-r $framesPerSecond")
+        add("-movflags +faststart")
+        add(outputFileRelativePath)
+    }.joinToString(separator = " ")
     measureTime {
         convertingWebpsToVideo(conversionCommand.commandExecutionLines(workingDir = outputDir))
     }.also { println("Took $it to build video from WEBPs") }

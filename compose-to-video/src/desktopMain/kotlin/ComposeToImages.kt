@@ -34,8 +34,8 @@ import kotlinx.coroutines.CompletableDeferred
 
 suspend fun recordComposableAsImages(
     size: IntSize,
-    outputDir: File,
     framesPerSecond: Int = 60,
+    outputDir: File,
     duration: Duration,
     progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
     content: @Composable () -> Unit

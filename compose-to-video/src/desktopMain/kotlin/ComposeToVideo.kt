@@ -69,7 +69,7 @@ suspend fun recordComposableAsVideo(
     }
     println("Took $generationDuration to generate and write WEBPs")
     // This helped: https://ottverse.com/ffmpeg-convert-to-apple-prores-422-4444-hq/
-    val ffmpeg = try {
+    val ffmpeg: String = try {
         val isWindows = System.getProperty("os.name").contains("windows", ignoreCase = true)
         runInterruptible(Dispatchers.IO) {
             val checkCommand = if (isWindows) "WHERE ffmpeg" else "which ffmpeg"

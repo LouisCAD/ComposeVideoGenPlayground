@@ -51,7 +51,7 @@ suspend fun recordComposableAsVideo(
             size = size,
             outputDir = outputDir,
             duration = duration,
-            progressListener = { totalFrames, getWrittenFrames ->
+            progressHandler = { totalFrames, getWrittenFrames ->
                 onEachFrame { onFrameWritten(getWrittenFrames(), totalFrames) }
             },
             content = content

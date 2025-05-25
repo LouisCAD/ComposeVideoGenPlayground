@@ -8,8 +8,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.use
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -32,37 +30,17 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 import kotlin.use
-import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.CompletableDeferred
 
-fun interface FramesWritingProgressListener {
-
-    /**
-     * This is deliberately not an observable type, because updates are expected to arrive faster
-     * than a human could perceive, and faster than the screen refresh-rate.
-     *
-     * The right way is therefore to poll [getCurrentWrittenFrames] on each frame,
-     * with a loop and [withFrameNanos], for a UI made with Compose, that is.
-     */
-    suspend fun handleProgress(
-        totalFrames: Int,
-        getCurrentWrittenFrames: () -> Int
-    ): Nothing
-}
-
-/**
- * Note that [frameWrittenCountUpdate] is deliberately not named `onFrameWritten` because
- * it is not called on each written frame, since it could be higher than the screen
- * refresh-rate. It is instead called on each frame (see [androidx.compose.runtime.withFrameNanos]),
- * for display in UI.
- */
 suspend fun recordComposableAsImages(
     size: IntSize,
     outputDir: File,
     framesPerSecond: Int = 60,
     duration: Duration,
-    progressListener: FramesWritingProgressListener = FramesWritingProgressListener { _, _ -> awaitCancellation() },
+    progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
     content: @Composable () -> Unit
-) {
+): FramesRecordingDurationSummary {
+
     val expectedImagesCount = framesCountFor(duration, framesPerSecond).also {
         require(it <= Int.MAX_VALUE) {
             "Insane! You probably don't want to actually record for this long ($duration) at ${framesPerSecond}fps"
@@ -77,7 +55,7 @@ suspend fun recordComposableAsImages(
     //
     // They were mentioned in this thread on Kotlin's Slack:
     //   https://kotlinlang.slack.com/archives/C01D6HTPATV/p1747657487445149?thread_ts=1746482154.335809&cid=C01D6HTPATV
-    MainUIDispatcher {
+    return MainUIDispatcher {
         ImageComposeScene(
             width = size.width,
             height = size.height,
@@ -87,41 +65,21 @@ suspend fun recordComposableAsImages(
             val interval = 1.seconds / framesPerSecond
             val images = scene.images(cutAt = duration, interval = interval)
             val imagesWrittenCount = AtomicInt(0)
-            raceOf({
-                images.recordAllParallelizedInto(
-                    outputDir = outputDir,
-                    onImageWritten = { imagesWrittenCount.incrementAndFetch() }
-                )
-            }, {
-                progressListener.handleProgress(
-                    totalFrames = expectedImagesCount,
-                    getCurrentWrittenFrames = { imagesWrittenCount.load() }
-                )
-            })
+            Dispatchers.Default {
+                raceOf({
+                    images.recordAllParallelizedInto(
+                        outputDir = outputDir,
+                        progressListener = { _, _ -> imagesWrittenCount.incrementAndFetch() },
+                    )
+                }, {
+                    progressHandler.handleProgress(
+                        totalFrames = expectedImagesCount,
+                        getCurrentWrittenFrames = { imagesWrittenCount.load() }
+                    )
+                })
+            }
         }
     }
-}
-
-fun framesCountFor(
-    duration: Duration,
-    framesPerSecond: Int
-): Long {
-    // We separate whole seconds to avoid cumulating approximations
-    // that could lead to an inaccurate result.
-    val wholeSeconds = duration.inWholeSeconds
-    return wholeSeconds * framesPerSecond + run {
-        val wholeSecondsPart = wholeSeconds.seconds
-        if (duration == wholeSecondsPart) return@run 0L
-        val remainder = duration - wholeSecondsPart
-        (remainder * framesPerSecond / 1.seconds).toLong()
-    }
-}
-
-fun framesCountFor(
-    duration: Duration,
-    framesPerSecond: Double
-): Long {
-    return (duration * framesPerSecond / 1.seconds).toLong()
 }
 
 private fun ImageComposeScene.images(
@@ -167,51 +125,32 @@ private suspend fun Flow<Image>.recordAllInto(outputDir: File) {
 
 private suspend fun Flow<Image>.recordAllParallelizedInto(
     outputDir: File,
-    onImageWritten: () -> Unit
-) {
+    progressListener: FramesRecordingProgressListener = FramesRecordingProgressListener { _, _ -> }
+): FramesRecordingDurationSummary = Dispatchers.Default {
+
+    val durationSummaryCompletable = CompletableDeferred<FramesRecordingDurationSummary>()
+
     val generatedImages = withIndex().measure { upstreamDuration, downstreamDuration ->
-        println("UP  :$upstreamDuration")
-        println("DOWN:$downstreamDuration")
+        val summary = FramesRecordingDurationSummary(
+            framesGeneration = upstreamDuration,
+            encodingAndWritingGeneration = downstreamDuration
+        )
+        durationSummaryCompletable.complete(summary)
     }
 
-    val encodeTimes = Channel<Duration>()
-    val writeTimes = Channel<Duration>()
-
-    Dispatchers.Default {
-        raceOf({
-            printAvgDurationUpdates(encodeTimes, "encode")
-        }, {
-            printAvgDurationUpdates(writeTimes, "write")
-        }, {
-            generatedImages.collectParallel(maxParallelism = 64) { (index, image) ->
-                image.use { img ->
-                    val webpData: Data
-                    measureTime {
-                        webpData = img.encodeToData(EncodedImageFormat.WEBP)!!
-                    }.also { encodeTimes.send(it) }
-                    webpData.use {
-                        val bytes: ByteArray = it.bytes
-                        Dispatchers.IO {
-                            measureTime {
-                                val file = outputDir.resolve("$index.webp")
-                                file.writeBytes(bytes)
-                                onImageWritten()
-                            }.also { writeTimes.send(it) }
-                        }
-                    }
+    generatedImages.collectParallel(maxParallelism = 64) { (index, skiaImage) ->
+        skiaImage.use { image ->
+            val webpData: Data
+            val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
+            progressListener.onFrameEncoded(index, encodingDuration)
+            webpData.use { webpData ->
+                val bytes: ByteArray = webpData.bytes
+                Dispatchers.IO {
+                    val writeDuration = measureTime { outputDir.resolve("$index.webp").writeBytes(bytes) }
+                    progressListener.onFrameWritten(index, writeDuration)
                 }
             }
-        })
+        }
     }
-}
-
-private suspend fun printAvgDurationUpdates(durations: ReceiveChannel<Duration>, what: String) {
-    var n = 0
-    var totalDuration = Duration.ZERO
-    for (duration in durations) {
-        n++
-        totalDuration += duration
-        val avg = totalDuration / n
-//        println("avg $what duration is $avg")
-    }
+    durationSummaryCompletable.await()
 }

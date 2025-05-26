@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 import org.bytedeco.ffmpeg.ffmpeg
 import org.bytedeco.javacpp.Loader
 import java.io.File
@@ -35,7 +36,7 @@ suspend fun recordComposableAsVideo(
     outputFileNameWithoutExtension: String,
     duration: Duration,
     progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
-    convertingWebpsToVideo: suspend (terminalOutput: Flow<String>) -> Unit,
+    convertingWebpsToVideo: suspend (terminalOutput: Flow<FfmpegProgressLine>) -> Unit,
     content: @Composable () -> Unit
 ) {
     val outputFileRelativePath = "$outputFileNameWithoutExtension.mov"
@@ -90,7 +91,10 @@ suspend fun recordComposableAsVideo(
         add(outputFileRelativePath)
     }.joinToString(separator = " ")
     measureTime {
-        convertingWebpsToVideo(conversionCommand.commandExecutionLines(workingDir = outputDir))
+        val progressLines = conversionCommand.commandExecutionLines(workingDir = outputDir).mapNotNull {
+            FfmpegProgressLine.parseOrNull(it)
+        }
+        convertingWebpsToVideo(progressLines)
     }.also { println("Took $it to build video from WEBPs") }
     if (false) outputDir.list()!!.forEach {
         if (it.endsWith(".webp")) outputDir.resolve(it).delete()

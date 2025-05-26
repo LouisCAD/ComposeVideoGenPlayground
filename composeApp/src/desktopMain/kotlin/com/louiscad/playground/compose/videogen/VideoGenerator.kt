@@ -27,6 +27,7 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.louiscad.playground.compose.videogen.core.FfmpegProgressLine
 import com.louiscad.playground.compose.videogen.core.extensions.compose.onEachFrame
 import com.louiscad.playground.compose.videogen.core.recordComposableAsVideo
 import splitties.coroutines.rememberCallableState
@@ -64,9 +65,9 @@ fun VideoGenerator(
                         }
                     },
                     convertingWebpsToVideo = { terminalOutput ->
-                        terminalOutput.collect { line ->
+                        terminalOutput.collect { progressLine ->
+                            println(progressLine)
                             //TODO: Surface the progress and errors in the UI.
-                            println(line)
                         }
                     }
                 ) {

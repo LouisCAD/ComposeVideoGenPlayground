@@ -4,7 +4,6 @@ package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.IntSize
-import com.louiscad.playground.compose.videogen.core.extensions.compose.onEachFrame
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,7 +34,7 @@ suspend fun recordComposableAsVideo(
     outputDir: File,
     outputFileNameWithoutExtension: String,
     duration: Duration,
-    onFrameWritten: (writtenFrames: Int, totalFrames: Int) -> Unit,
+    progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
     convertingWebpsToVideo: suspend (terminalOutput: Flow<String>) -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -61,9 +60,7 @@ suspend fun recordComposableAsVideo(
             framesPerSecond = framesPerSecond,
             outputDir = tmpDirForWebps,
             duration = duration,
-            progressHandler = { totalFrames, getWrittenFrames ->
-                onEachFrame { onFrameWritten(getWrittenFrames(), totalFrames) }
-            },
+            progressHandler = progressHandler,
             content = content
         )
     }

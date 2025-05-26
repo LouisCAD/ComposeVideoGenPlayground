@@ -27,6 +27,7 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.louiscad.playground.compose.videogen.core.extensions.compose.onEachFrame
 import com.louiscad.playground.compose.videogen.core.recordComposableAsVideo
 import splitties.coroutines.rememberCallableState
 import splitties.coroutines.repeatWhileActive
@@ -56,9 +57,11 @@ fun VideoGenerator(
                     outputDir = outputDir,
                     outputFileNameWithoutExtension = outputName,
                     duration = 10.seconds,
-                    onFrameWritten = { written, total ->
-                        writtenFrames = written
-                        totalFrames = total
+                    progressHandler = { total, getWrittenFrames ->
+                        onEachFrame {
+                            writtenFrames = getWrittenFrames()
+                            totalFrames = total
+                        }
                     },
                     convertingWebpsToVideo = { terminalOutput ->
                         terminalOutput.collect { line ->

@@ -20,9 +20,9 @@ abstract class VideoGeneratorUi {
         val outputDir: File,
         val outputFileNameWithoutExtension: String,
         val size: IntSize,
-        val timecodesSourceFile: File,
+        val framesPerSecond: Int,
         val duration: Duration,
-        val content: @Composable () -> Unit,
+        val getContent: suspend () -> (@Composable () -> Unit),
     )
 
     @Stable

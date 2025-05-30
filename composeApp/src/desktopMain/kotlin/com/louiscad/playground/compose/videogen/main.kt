@@ -13,9 +13,17 @@ import splitties.coroutines.rememberCallableState
 import splitties.coroutines.repeatWhileActive
 
 fun main() = application {
-    var isSecondWindowOpen by remember { mutableStateOf(true) }
+    var isSecondWindowOpen by remember { mutableStateOf(false) }
     var isTestWindowOpen by remember { mutableStateOf(false) }
     Window(
+        onCloseRequest = ::exitApplication,
+        title = "ComposeVideoGenPlayground",
+    ) {
+        val ui = remember { VideoGeneratorUiImpl() }
+        LaunchedEffect(Unit) { handleVideoGeneration(ui) }
+        ui.Content()
+    }
+    if (false) Window(
         onCloseRequest = ::exitApplication,
         title = "ComposeVideoGenPlayground",
     ) {

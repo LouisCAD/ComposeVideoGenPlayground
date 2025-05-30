@@ -46,7 +46,10 @@ suspend fun recordComposableAsVideo(
         freshDir = outputDir.mkdirs()
         tmpDirForWebps = outputDir.resolve("tmp_webps").also {
             val wasCreated = it.mkdirs()
-            if (wasCreated.not()) it.deleteRecursively()
+            if (wasCreated.not()) {
+                it.deleteRecursively()
+                it.mkdirs()
+            }
             it.deleteOnExit()
         }
         if (freshDir.not()) {
@@ -65,7 +68,13 @@ suspend fun recordComposableAsVideo(
             content = content
         )
     }
-    println("Took $generationDuration to generate and write WEBPs")
+    run {
+        println("Took $generationDuration to generate and write WEBPs")
+        val difference = generationDuration - recordingDurationSummary.let {
+            it.framesGeneration + it.encodingAndWritingGeneration
+        }
+        println("Time calculation difference: $difference")
+    }
     // This helped: https://ottverse.com/ffmpeg-convert-to-apple-prores-422-4444-hq/
     val ffmpeg: String = try {
         val isWindows = System.getProperty("os.name").contains("windows", ignoreCase = true)
@@ -96,9 +105,7 @@ suspend fun recordComposableAsVideo(
         }
         convertingWebpsToVideo(progressLines)
     }.also { println("Took $it to build video from WEBPs") }
-    if (false) outputDir.list()!!.forEach {
-        if (it.endsWith(".webp")) outputDir.resolve(it).delete()
-    }
+
 }
 
 suspend fun <T> Flow<T>.collectParallel(

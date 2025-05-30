@@ -21,19 +21,19 @@ fun rememberIncrementCounter(sortedTriggersNanos: LongArray): IntState = remembe
     mutableIntStateOf(0)
 }.also {
     if (sortedTriggersNanos.isEmpty()) return@also
-    var number by it
-    LaunchedEffect(Unit) {
+    LaunchedEffect(sortedTriggersNanos) {
+        var number by it
         var lastTriggerIndex = -1
         do {
             val expectedTriggerNanos = sortedTriggersNanos[lastTriggerIndex + 1]
             val keepGoing = withFrameNanos { nanos ->
                 if (nanos >= expectedTriggerNanos) {
                     lastTriggerIndex++
+                    number++
                     val nextTriggerNanos = sortedTriggersNanos.getOrElse(lastTriggerIndex + 1) {
                         return@withFrameNanos false
                     }
                     check(nextTriggerNanos >= expectedTriggerNanos)
-                    number++
                 }
                 true
             }

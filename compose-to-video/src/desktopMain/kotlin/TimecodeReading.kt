@@ -25,7 +25,7 @@ fun readTimecodes(sourceFile: File): List<Timecode> = sourceFile.useLines { line
     lines.mapIndexedNotNull { lineIndex, line ->
         if (line.isBlank() || line.isComment()) return@mapIndexedNotNull null
         val lineNumber = lineIndex + 1
-        val parts = line.split(':').toMutableList()
+        val parts = line.substringBefore("//").split(':').toMutableList()
         check(parts.size in 1..4) {
             "Timecode at $lineNumber must have 1 to 4 colon separated parts."
         }

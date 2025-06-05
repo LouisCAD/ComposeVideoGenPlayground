@@ -46,6 +46,7 @@ private suspend fun recordComposableAsVideo(
 ) {
     recordComposableAsVideo(
         size = request.size,
+        density = request.density,
         framesPerSecond = request.framesPerSecond,
         outputDir = request.outputDir,
         outputFileNameWithoutExtension = request.outputFileNameWithoutExtension,

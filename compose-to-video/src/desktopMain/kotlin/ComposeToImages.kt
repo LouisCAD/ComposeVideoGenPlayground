@@ -4,6 +4,7 @@ package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.use
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ import kotlinx.coroutines.CompletableDeferred
 
 suspend fun recordComposableAsImages(
     size: IntSize,
+    density: Density,
     framesPerSecond: Int = 60,
     outputDir: File,
     duration: Duration,
@@ -59,9 +61,10 @@ suspend fun recordComposableAsImages(
         ImageComposeScene(
             width = size.width,
             height = size.height,
-            coroutineContext = coroutineContext[ContinuationInterceptor]!!
+            density = density,
+            coroutineContext = coroutineContext[ContinuationInterceptor]!!,
+            content = content
         ).use { scene ->
-            scene.setContent(content)
             val images = scene.images(cutAt = duration, framesPerSecond = framesPerSecond)
             val imagesWrittenCount = AtomicInt(0)
             Dispatchers.Default {

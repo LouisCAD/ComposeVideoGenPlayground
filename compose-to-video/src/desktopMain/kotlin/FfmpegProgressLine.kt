@@ -38,7 +38,7 @@ data class FfmpegProgressLine(
                 }!!.replace("KiB", "").toLong(),
                 time = rawValues.remove("time")!!.let { timeText ->
                     Time(
-                        hours = timeText.substring(0, 2).toInt(),
+                        hours = timeText.substring(0, 2).toInt(), //TODO: Fix/handle when we get "N/"
                         minutes = timeText.substring(3, 5).toInt(),
                         seconds = timeText.substring(6).toDouble()
                     )

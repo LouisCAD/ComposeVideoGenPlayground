@@ -3,6 +3,7 @@
 package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -31,6 +32,7 @@ import kotlin.time.measureTime
  */
 suspend fun recordComposableAsVideo(
     size: IntSize,
+    density: Density = Density(1f),
     framesPerSecond: Int = 60,
     outputDir: File,
     outputFileNameWithoutExtension: String,
@@ -61,6 +63,7 @@ suspend fun recordComposableAsVideo(
     val generationDuration: Duration = measureTime {
         recordingDurationSummary = recordComposableAsImages(
             size = size,
+            density = density,
             framesPerSecond = framesPerSecond,
             outputDir = tmpDirForWebps,
             duration = duration,
@@ -100,8 +103,15 @@ suspend fun recordComposableAsVideo(
         add(outputFileRelativePath)
     }.joinToString(separator = " ")
     measureTime {
-        val progressLines = conversionCommand.commandExecutionLines(workingDir = outputDir).mapNotNull {
-            FfmpegProgressLine.parseOrNull(it)
+        val progressLines = conversionCommand.commandExecutionLines(
+            workingDir = outputDir
+        ).mapNotNull { rawLine ->
+            runCatching {
+                FfmpegProgressLine.parseOrNull(rawLine)
+            }.onFailure {
+                println("Failed to parse line: $rawLine")
+                it.printStackTrace()
+            }.getOrNull()
         }
         convertingWebpsToVideo(progressLines)
     }.also { println("Took $it to build video from WEBPs") }

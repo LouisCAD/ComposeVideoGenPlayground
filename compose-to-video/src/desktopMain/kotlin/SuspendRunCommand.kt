@@ -59,7 +59,7 @@ private fun processBuilder(
 )
 
 private suspend fun Process.killOrForceKill(waitForForceKill: suspend () -> Unit) {
-    val neededToBeDestroyForcibly = raceOf({
+    val neededToBeDestroyedForcibly = raceOf({
         destroy()
         runInterruptible(Dispatchers.IO) { waitFor() }
         false
@@ -68,7 +68,7 @@ private suspend fun Process.killOrForceKill(waitForForceKill: suspend () -> Unit
         destroyForcibly()
         true
     })
-    if (neededToBeDestroyForcibly) {
+    if (neededToBeDestroyedForcibly) {
         // Wait for the process termination to complete.
         runInterruptible(Dispatchers.IO) { waitFor() }
     }

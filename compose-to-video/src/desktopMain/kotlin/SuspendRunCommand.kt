@@ -85,6 +85,8 @@ private fun ProcessBuilder.execute(waitForForceKill: suspend () -> Unit): Flow<S
     }
     val runtime = Runtime.getRuntime()
     runtime.addShutdownHook(shutdownHook)
+    //TODO: Support writing to the outputStream/outputWriter.
+    // Possibly look at how Amper does it.
     launch {
         process.inputStream.use { stream ->
             stream.buffered().reader().useLines { lines ->

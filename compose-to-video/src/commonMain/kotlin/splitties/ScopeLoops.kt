@@ -5,8 +5,8 @@
 package splitties.coroutines
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlin.coroutines.coroutineContext
 
 /**
  * As of Kotlin 1.3, `while (true)` evaluates to [Unit] instead of [Nothing] in lambdas, and using
@@ -16,7 +16,7 @@ import kotlin.coroutines.coroutineContext
  */
 suspend inline fun repeatWhileActive(block: () -> Unit): Nothing {
     while (true) {
-        coroutineContext.ensureActive()
+        currentCoroutineContext().ensureActive()
         block()
     }
 }
@@ -37,7 +37,7 @@ suspend inline fun repeatWhileActive(
     block: () -> Unit
 ): Nothing {
     if (ignoreInnerCancellations) while (true) {
-        coroutineContext.ensureActive() // Outer cancellations are caught here
+        currentCoroutineContext().ensureActive() // Outer cancellations are caught here
         try {
             block()
         } catch (ignored: CancellationException) {

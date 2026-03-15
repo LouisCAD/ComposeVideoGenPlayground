@@ -10,10 +10,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.louiscad.playground.compose.videogen.core.LibraryComponent
 import com.louiscad.playground.compose.videogen.library.CoolCounterPreview
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.compose_multiplatform

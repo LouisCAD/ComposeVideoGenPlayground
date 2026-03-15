@@ -16,9 +16,9 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     jvm("desktop")
-    
+
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         outputModuleName = "composeLib"
@@ -27,7 +27,7 @@ kotlin {
     }
 
     applyDefaultHierarchyTemplate()
-    
+
     sourceSets {
         val skikoMain by creating {
             dependsOn(commonMain.get())
@@ -38,17 +38,13 @@ kotlin {
         val wasmJsMain by getting {
             dependsOn(skikoMain)
         }
-
-        androidMain.dependencies {
-            implementation(compose.preview)
-        }
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
         }
@@ -67,7 +63,7 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
-    
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
@@ -80,5 +76,5 @@ android {
 }
 
 dependencies {
-    debugImplementation(compose.uiTooling)
+    debugImplementation(libs.compose.ui.tooling)
 }

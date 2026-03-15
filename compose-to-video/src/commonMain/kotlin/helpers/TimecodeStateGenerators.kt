@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import com.louiscad.playground.compose.videogen.core.Timecode
 import com.louiscad.playground.compose.videogen.core.toNanosOffset
-import kotlin.time.Duration
 
 @Composable
 fun rememberTimecodesCounter(

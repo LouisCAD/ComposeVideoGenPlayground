@@ -93,19 +93,24 @@ fun VideoGenerator(
                 else -> println("Unsupported drag data: $data").let { false }
             }
 
+            override fun onStarted(event: DragAndDropEvent) {
+                println("onStarted")
+            }
+
             override fun onEntered(event: DragAndDropEvent) {
                 super.onEntered(event)
                 isDragging = true
+                println("onEntered")
             }
 
             override fun onExited(event: DragAndDropEvent) {
-                super.onExited(event)
                 isDragging = false
+                println("onExited")
             }
 
             override fun onEnded(event: DragAndDropEvent) {
-                super.onEnded(event)
                 isDragging = false
+                println("onEnded")
             }
         }
     }

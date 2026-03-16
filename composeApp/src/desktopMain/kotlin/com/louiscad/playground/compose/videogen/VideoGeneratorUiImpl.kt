@@ -1,6 +1,10 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.louiscad.playground.compose.videogen
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
@@ -11,17 +15,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.Button
 import androidx.compose.material.Card
+import androidx.compose.material.Icon
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -30,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragData
@@ -49,6 +57,8 @@ import com.louiscad.playground.compose.videogen.core.readTimecodes
 import com.louiscad.playground.compose.videogen.core.rememberIncrementCounter
 import com.louiscad.playground.compose.videogen.core.toNanosOffset
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
+import composevideogenplayground.composeapp.generated.resources.Res
+import composevideogenplayground.composeapp.generated.resources.info_24dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -56,6 +66,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.invoke
+import org.jetbrains.compose.resources.painterResource
 import splitties.coroutines.CallableState
 import splitties.coroutines.call
 import splitties.coroutines.raceOf
@@ -181,13 +192,28 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
     )
 
     @Composable
-    private fun SecondsToRecordLine() = OutlinedTextField(
-        state = secondsToRecordFieldState,
-        lineLimits = TextFieldLineLimits.SingleLine,
-        inputTransformation = decimalOnlyInputTransformation,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        label = { Text("seconds (keep blank to use last timecode)") },
-    )
+    private fun SecondsToRecordLine() = Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedTextField(
+            state = secondsToRecordFieldState,
+            modifier = Modifier.width(150.dp),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            trailingIcon = {
+                TooltipArea(
+                    tooltip = { Surface(shape = RoundedCornerShape(8.dp)) { Text("Keep blank to use last timecode", Modifier.padding(4.dp)) } },
+                    delayMillis = 0,
+                    tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.CenterEnd, alignment = Alignment.CenterEnd)
+                ) {
+                    Icon(painterResource(Res.drawable.info_24dp), contentDescription = "Info")
+                }
+            },
+            inputTransformation = decimalOnlyInputTransformation,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text("seconds") },
+        )
+    }
 
     @Composable
     private fun GenRequestInProgress() = Column(

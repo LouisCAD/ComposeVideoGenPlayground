@@ -2,7 +2,6 @@ package com.louiscad.playground.compose.videogen.ui
 
 import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember

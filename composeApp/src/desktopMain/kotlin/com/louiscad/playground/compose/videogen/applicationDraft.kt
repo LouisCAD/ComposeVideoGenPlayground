@@ -4,15 +4,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
+import com.louiscad.playground.compose.videogen.ui.VideoGeneratorUiImpl
 import splitties.coroutines.rememberCallableState
 import splitties.coroutines.repeatWhileActive
 
-fun main() = application {
+fun applicationDraft() = application {
+//    val trayState = rememberTrayState()
+//    Tray(painterResource(Res.drawable.compose_multiplatform), trayState, tooltip = "Compose Video Gen") {
+//        Item("About", onClick = {})
+//    }
     var isSecondWindowOpen by remember { mutableStateOf(false) }
     var isTestWindowOpen by remember { mutableStateOf(false) }
     Window(
@@ -38,6 +43,7 @@ fun main() = application {
         }
     }
     if (isTestWindowOpen) Window(
+        state = rememberWindowState(),
         onCloseRequest = { isTestWindowOpen = false },
         title = "Test window",
     ) {
@@ -64,7 +70,7 @@ fun main() = application {
                 window.isMinimized = true
             }
         }
-        VideoGenerator(IntSize(1920 / 8, 1080 / 3)) {
+        VideoGenerator() {
             MaterialTheme(colors = lightColors()) {
                 ProvideTextStyle(MaterialTheme.typography.h2.copy(color = Color.White)) {
                     CounterOverlay()

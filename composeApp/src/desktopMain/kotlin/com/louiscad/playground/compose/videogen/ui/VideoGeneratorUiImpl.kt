@@ -6,8 +6,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.input.OutputTransformation
-import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.*
@@ -21,7 +19,6 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -34,16 +31,13 @@ import com.louiscad.playground.compose.videogen.core.toNanosOffset
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
 import com.louiscad.playground.compose.videogen.ui.components.SecondsToRecordLine
 import com.louiscad.playground.compose.videogen.ui.components.SizeLine
+import com.louiscad.playground.compose.videogen.ui.components.VideoGenProgressCards
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.invoke
 import splitties.coroutines.CallableState
 import splitties.coroutines.call
-import splitties.coroutines.raceOf
 import java.io.File
 import java.net.URI
 import java.nio.file.Paths
@@ -55,8 +49,14 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
 
     @Composable
     fun Content() = Box(Modifier.padding(16.dp)) {
-        if (startGeneratingRequest.isAwaitingCall) GenRequestSetup()
-        else GenRequestInProgress()
+        when {
+            startGeneratingRequest.isAwaitingCall -> GenRequestSetup()
+            else -> VideoGenProgressCards(
+                framesGenerationProgress = framesGenProgress ?: return@Box,
+                videoEncodingProgress = videoEncodingProgressFlow ?: return@Box,
+                modifier = Modifier.fillMaxSize().padding(16.dp)
+            )
+        }
     }
 
     @Composable
@@ -144,55 +144,6 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
         label = { Text("name") },
     )
 
-    @Composable
-    private fun GenRequestInProgress(): Unit = Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        val framesGenerationProgress = framesGenProgress ?: return
-        Text("Progress", style = MaterialTheme.typography.h2)
-        Card {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Frames generation", style = MaterialTheme.typography.h2)
-                LinearProgressIndicator(
-                    progress = framesGenerationProgress.let {
-                        it.writtenFrames.toFloat() / it.totalFrames
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row {
-                    Text("Frames:", style = MaterialTheme.typography.h6)
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = with(framesGenerationProgress) { "$writtenFrames/$totalFrames" },
-                        textAlign = TextAlign.End
-                    )
-                }
-            }
-        }
-        Card {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Encoding", style = MaterialTheme.typography.h2)
-                val ratio = encodingProgressLine?.let {
-                    it.frameNumber.toFloat() / framesGenerationProgress.totalFrames
-                } ?: 0f
-                LinearProgressIndicator(
-                    progress = ratio,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row {
-                    Text("Speed:", style = MaterialTheme.typography.h6)
-                    Text(text = encodingProgressLine?.let { "${it.speedFactor}x" } ?: "-")
-                }
-                Row {
-                    Text("Frames throughput:", style = MaterialTheme.typography.h6)
-                    Spacer(Modifier.weight(1f))
-                    Text(text = encodingProgressLine?.let { "${it.fps}fps" } ?: "-", textAlign = TextAlign.End)
-                }
-            }
-        }
-    }
-
     private val startGeneratingRequest = CallableState.Companion<Unit>()
 
     private var outputDirState = mutableStateOf<File?>(null)
@@ -204,7 +155,7 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
     private val heightFieldState = TextFieldState(initialText = "1080")
     private val densityFieldState = TextFieldState(initialText = "1.0")
     private var framesGenProgress: FramesGenerationProgress? by mutableStateOf(null)
-    private var encodingProgressLine: FfmpegProgressLine? by mutableStateOf(null)
+    private var videoEncodingProgressFlow: Flow<FfmpegProgressLine>? by mutableStateOf(null)
 
     override suspend fun awaitGenerationRequest(): GenerationRequest {
         val fps = framesPerSecond
@@ -259,20 +210,13 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
         framesGenerationProgress: FramesGenerationProgress,
         videoEncodingProgress: Flow<FfmpegProgressLine>
     ) {
-        raceOf({
-            framesGenProgress = framesGenerationProgress
-            try {
-                awaitCancellation()
-            } finally {
-                framesGenProgress = null
-            }
-        }, {
-            videoEncodingProgress.onEach { progressLine ->
-                encodingProgressLine = progressLine
-                println(progressLine)
-            }.onCompletion {
-                encodingProgressLine = null
-            }.collect()
-        })
+        videoEncodingProgressFlow = videoEncodingProgress
+        framesGenProgress = framesGenerationProgress
+        try {
+            awaitCancellation()
+        } finally {
+            videoEncodingProgressFlow = null
+            framesGenProgress = null
+        }
     }
 }

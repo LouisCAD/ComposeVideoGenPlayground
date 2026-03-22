@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import org.bytedeco.ffmpeg.ffmpeg
@@ -117,21 +116,3 @@ suspend fun recordComposableAsVideo(
     }.also { println("Took $it to build video from WEBPs") }
 
 }
-
-suspend fun <T> Flow<T>.collectParallel(
-    maxParallelism: Int,
-    bufferCapacity: Int = maxParallelism,
-    transform: suspend (T) -> Unit
-) {
-    coroutineScope {
-        val inputChannel = Channel<T>(capacity = bufferCapacity)
-        launch {
-            collect { inputChannel.send(it) }
-            inputChannel.close()
-        }
-        for (i in 0..<maxParallelism) launch {
-            for (element in inputChannel) transform(element)
-        }
-    }
-}
-

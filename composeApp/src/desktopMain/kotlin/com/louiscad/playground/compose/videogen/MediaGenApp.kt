@@ -7,6 +7,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 
 abstract class MediaGenApp {
 
+    abstract fun addJob(
+        jobInfo: MediaGenJob,
+        block: suspend () -> Unit
+    )
+
     protected val mediaGenJobsStateList = SnapshotStateList<MediaGenJob>()
 
     @Stable

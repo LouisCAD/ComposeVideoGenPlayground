@@ -19,15 +19,19 @@ data class MediaGenJob(
         val timeSpent: Duration
         //TODO: Introduce creation time, once we support persistence.
 
-        data object Enqueued : Status {
+        data class Enqueued(
+            val startNow: () -> Unit,
+        ) : Status {
             override val timeSpent: Duration get() = Duration.ZERO
         }
 
         data class Paused(
+            val resume: () -> Unit,
             override val timeSpent: Duration,
         ) : Status
 
         data class Running(
+            val pause: (() -> Unit)?,
             override val timeSpent: Duration,
             val estimatedTimeRemaining: Duration?,
             val completionRatio: Float,

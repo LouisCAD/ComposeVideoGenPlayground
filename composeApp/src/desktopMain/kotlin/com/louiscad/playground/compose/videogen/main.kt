@@ -13,13 +13,15 @@ import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.video_template_24dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.compose.resources.painterResource
 
 object AppDefaults {
     val icons = Icons.AutoMirrored.Rounded
 }
 
-private val mediaGenApp: MediaGenApp = MediaGenAppImpl()
+private val mediaGenApp: MediaGenApp = MediaGenAppImpl(CoroutineScope(Dispatchers.Default))
 
 fun main() = application {
     MediaGenTray(mediaGenApp)

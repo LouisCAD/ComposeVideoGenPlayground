@@ -18,7 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import org.jetbrains.compose.resources.painterResource
 
 object AppDefaults {
-    val icons = Icons.AutoMirrored.Rounded
+    val icons = Icons.Rounded
+    val iconsAutoMirrored = Icons.AutoMirrored.Rounded
 }
 
 private val mediaGenApp: MediaGenApp = MediaGenAppImpl(CoroutineScope(Dispatchers.Default))

@@ -27,7 +27,6 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.louiscad.playground.compose.videogen.core.FfmpegProgressLine
 import com.louiscad.playground.compose.videogen.core.extensions.compose.onEachFrame
 import com.louiscad.playground.compose.videogen.core.recordComposableAsVideo
 import splitties.coroutines.rememberCallableState
@@ -37,7 +36,7 @@ import java.nio.file.Paths
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun VideoGenerator(
+fun LegacyMvpVideoGenerator(
     defaultSize: IntSize = IntSize(1920, 1080),
     contentToRecord: @Composable () -> Unit
 ) {

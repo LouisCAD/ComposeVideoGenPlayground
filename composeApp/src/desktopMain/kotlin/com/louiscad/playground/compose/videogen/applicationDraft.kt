@@ -70,7 +70,7 @@ fun applicationDraft() = application {
                 window.isMinimized = true
             }
         }
-        VideoGenerator() {
+        LegacyMvpVideoGenerator() {
             MaterialTheme(colors = lightColors()) {
                 ProvideTextStyle(MaterialTheme.typography.h2.copy(color = Color.White)) {
                     CounterOverlay()

@@ -77,6 +77,6 @@ fun MediaGenApp.addComposableToRecord(request: VideoGeneratorUi.GenerationReques
                 progressChannel = videoEncodingProgressChannel
             )
         })
-        status = Status.Done(timeMark.elapsedNow())
+        status = Status.Done(timeSpent = timeMark.elapsedNow())
     }
 }

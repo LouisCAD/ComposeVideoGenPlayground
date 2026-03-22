@@ -18,5 +18,5 @@ abstract class MediaGenApp {
     val mediaGenJobs: List<MediaGenJob> get() = mediaGenJobsStateList
 
     @Stable
-    val isGeneratingMedia by derivedStateOf { mediaGenJobs.all { it.status is MediaGenJob.Status.Done } }
+    val isGeneratingMedia by derivedStateOf { mediaGenJobs.any { it.status !is MediaGenJob.Status.Done } }
 }

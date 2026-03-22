@@ -49,6 +49,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material)
+            implementation(libs.compose.material.icons.extended) //TOOD: Use the non extended version, or imported icons, if possible
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.ui.tooling.preview)
@@ -93,10 +94,6 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.ui.tooling)
-}
-
-composeCompiler {
-    featureFlags.add(ComposeFeatureFlag.OptimizeNonSkippingGroups)
 }
 
 compose.desktop {

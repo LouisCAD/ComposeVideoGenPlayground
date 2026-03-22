@@ -55,12 +55,12 @@ fun applicationDraft() = application {
     }
     val minimizeRequests = rememberCallableState<Unit>()
     if (isSecondWindowOpen) Window(
-        onCloseRequest = { minimizeRequests() },
+        onCloseRequest = minimizeRequests,
         title = "Video Generator prototype!",
     ) {
         MenuBar {
             Menu("🪟") {
-                Item("Close", onClick = { minimizeRequests() })
+                Item("Close", onClick = minimizeRequests)
                 Item("Quit", onClick = ::exitApplication)
             }
         }

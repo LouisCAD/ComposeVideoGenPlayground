@@ -2,15 +2,19 @@ package com.louiscad.playground.compose.videogen
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.Tray
+import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
+import com.louiscad.playground.compose.videogen.ui.components.MediaGenJobList
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.video_template_24dp
 import kotlinx.coroutines.CoroutineScope
@@ -32,11 +36,15 @@ fun main() = application {
 private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
     val mainWindowState = rememberWindowState()
 
+    var showJobs by remember { mutableStateOf(false) }
+    if (showJobs) Window(onCloseRequest = { showJobs = false }) { MediaGenJobList(mediaGenApp) }
+
     val trayState = rememberTrayState()
     Tray(painterResource(Res.drawable.video_template_24dp), trayState) {
         Item("Try notification", onClick = {
             trayState.sendNotification(Notification(title = "Yolo?", message = "Hello World!", Notification.Type.Info))
         })
+        Item("Show jobs window", enabled = !showJobs, onClick = { showJobs = true })
         MediaGenAwareQuitItem(mediaGenApp, ::exitApplication)
     }
 }

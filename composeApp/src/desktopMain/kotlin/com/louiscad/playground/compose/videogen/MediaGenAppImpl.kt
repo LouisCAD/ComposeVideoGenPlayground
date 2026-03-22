@@ -5,7 +5,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 
-internal class MediaGenAppImpl(private val scope: CoroutineScope) : MediaGenApp() {
+internal class MediaGenAppImpl(
+    private val scope: CoroutineScope,
+    private val autoStartEnqueuedJobs: Boolean = true,
+) : MediaGenApp() {
 
     private val jobsStateList = SnapshotStateList<Deferred<Result<Unit>>>()
 
@@ -13,6 +16,7 @@ internal class MediaGenAppImpl(private val scope: CoroutineScope) : MediaGenApp(
         jobInfo: MediaGenJob,
         block: suspend () -> Unit
     ) {
+        if (autoStartEnqueuedJobs) (jobInfo.status as? MediaGenJob.Status.Enqueued)?.startNow()
         jobsStateList += scope.async { runCatching { block() } }
         mediaGenJobsStateList += jobInfo
     }

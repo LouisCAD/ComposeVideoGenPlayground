@@ -36,7 +36,7 @@ object AppDefaults {
 
 
 fun main() = application {
-    val defaultScope = rememberCoroutineScope({ Dispatchers.Default })
+    val defaultScope = rememberCoroutineScope { Dispatchers.Default }
     val mediaGenApp: MediaGenApp = remember { MediaGenAppImpl(defaultScope) }
     MediaGenTray(mediaGenApp)
 }

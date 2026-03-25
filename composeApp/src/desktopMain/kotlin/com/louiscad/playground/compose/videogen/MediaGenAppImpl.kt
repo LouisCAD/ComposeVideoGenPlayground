@@ -17,7 +17,7 @@ internal class MediaGenAppImpl(
         block: suspend () -> Unit
     ) {
         if (autoStartEnqueuedJobs) (jobInfo.status as? MediaGenJob.Status.Enqueued)?.startNow()
-        jobsStateList += scope.async { runCatching { block() } }
+        jobsStateList += scope.async { runCatching { block() }.onFailure { it.printStackTrace() } }
         mediaGenJobsStateList += jobInfo
     }
 }

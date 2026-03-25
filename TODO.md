@@ -6,12 +6,13 @@
 - [x] Define the generation job model: `MediaGenJob`
 - [x] Create `MediaGenJobList`
 - [x] Create `addComposableToRecord`
-- [ ] Add UI (& previews) to view ongoing MediaGenJob.
-- [ ] Adapt the existing video gen code (currently hardcoded for the counter overlay)
-  - [ ] Make it call `addComposableToRecord`
-  - [ ] Rename it to something like "timecode list based video gen"?
-  - [ ] Make it support any composable
-- [ ] Minimal Main UI
+- [x] Add UI to view ongoing MediaGenJob.
+- [x] Adapt the existing video gen code (currently hardcoded for the counter overlay)
+  - [x] Make it call `addComposableToRecord`
+  - [x] Rename it to something okay
+  - [x] Make it support any composable
+- [ ] **Create the sport-style score overlay**
+- [ ] Minimal Main UI (Composable picker)
   - [ ] Design it
   - [ ] Create the UI model(s)
   - [ ] Code a minimal version (should it have search)
@@ -20,7 +21,7 @@
   - Create a state based adapter
 - [ ] Abstract away resolution input
   - [ ] Introduce presets, sorted by orientation (maybe have 2160p, 1080p, etc, with portrait/landscape segmented button?)
-- [ ] Create the sport score overlay
+- [ ] Create API for persistable WYSIWYG parametric composables.
 
 ## Other stuff
 

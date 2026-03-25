@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.louiscad.playground.compose.videogen.DragNDropTarget
+import com.louiscad.playground.compose.videogen.VideoGenerationRequest
 import com.louiscad.playground.compose.videogen.VideoGeneratorUi
 import com.louiscad.playground.compose.videogen.core.FfmpegProgressLine
 import com.louiscad.playground.compose.videogen.core.readTimecodes
@@ -157,7 +158,7 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
     private var framesGenProgress: FramesGenerationProgress? by mutableStateOf(null)
     private var videoEncodingProgressFlow: Flow<FfmpegProgressLine>? by mutableStateOf(null)
 
-    override suspend fun awaitGenerationRequest(): GenerationRequest {
+    override suspend fun awaitGenerationRequest(): VideoGenerationRequest {
         val fps = framesPerSecond
         val output: File
         val nanosOffsets: LongArray
@@ -187,7 +188,7 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
             break
         }
         val outputFileNameWithoutExtension = outputNameWithoutExtensionFieldState.text.toString()
-        return GenerationRequest(
+        return VideoGenerationRequest(
             outputDir = output,
             outputFileNameWithoutExtension = outputFileNameWithoutExtension,
             size = IntSize(width, height),

@@ -1,30 +1,16 @@
 package com.louiscad.playground.compose.videogen
 
 import androidx.compose.runtime.*
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntSize
 import com.louiscad.playground.compose.videogen.core.FfmpegProgressLine
 import kotlinx.coroutines.flow.Flow
-import java.io.File
-import kotlin.time.Duration
 
 abstract class VideoGeneratorUi {
 
-    abstract suspend fun awaitGenerationRequest(): GenerationRequest
+    abstract suspend fun awaitGenerationRequest(): VideoGenerationRequest
 
     abstract suspend fun showGenerationProgress(
         framesGenerationProgress: FramesGenerationProgress,
         videoEncodingProgress: Flow<FfmpegProgressLine>
-    )
-
-    data class GenerationRequest(
-        val outputDir: File,
-        val outputFileNameWithoutExtension: String,
-        val size: IntSize,
-        val density: Density,
-        val framesPerSecond: Int,
-        val duration: Duration,
-        val getContent: suspend () -> (@Composable () -> Unit),
     )
 
     @Stable

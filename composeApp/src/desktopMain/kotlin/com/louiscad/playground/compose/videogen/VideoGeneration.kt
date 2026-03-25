@@ -40,7 +40,7 @@ suspend fun handleVideoGeneration(ui: VideoGeneratorUi): Nothing = repeatWhileAc
 }
 
 suspend fun recordComposableAsVideo(
-    request: VideoGeneratorUi.GenerationRequest,
+    request: VideoGenerationRequest,
     progressHandler: FramesWritingProgressHandler,
     progressChannel: SendChannel<FfmpegProgressLine>
 ) {

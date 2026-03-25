@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import splitties.coroutines.raceOf
 import kotlin.time.TimeSource
 
-fun MediaGenApp.addComposableToRecord(request: VideoGeneratorUi.GenerationRequest) {
+fun MediaGenApp.addComposableToRecord(request: VideoGenerationRequest) {
     val startSignal: CompletableJob = Job()
     val statusState = mutableStateOf<Status>(Status.Enqueued(startNow = startSignal::complete))
     var framesGenerationProgress: VideoGeneratorUi.FramesGenerationProgress? by mutableStateOf(null)

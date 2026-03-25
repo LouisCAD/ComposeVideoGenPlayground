@@ -145,7 +145,7 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
         label = { Text("name") },
     )
 
-    private val startGeneratingRequest = CallableState.Companion<Unit>()
+    private val startGeneratingRequest = CallableState<Unit>()
 
     private val outputDirState = mutableStateOf<File?>(null)
     private val outputNameWithoutExtensionFieldState = TextFieldState(initialText = "generated-video")

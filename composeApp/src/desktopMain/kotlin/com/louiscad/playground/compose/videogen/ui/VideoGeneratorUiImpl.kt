@@ -147,11 +147,11 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
 
     private val startGeneratingRequest = CallableState.Companion<Unit>()
 
-    private var outputDirState = mutableStateOf<File?>(null)
-    private var outputNameWithoutExtensionFieldState = TextFieldState(initialText = "generated-video")
-    private var timeCodesSourceFileState = mutableStateOf<File?>(null)
+    private val outputDirState = mutableStateOf<File?>(null)
+    private val outputNameWithoutExtensionFieldState = TextFieldState(initialText = "generated-video")
+    private val timeCodesSourceFileState = mutableStateOf<File?>(null)
     private var framesPerSecond: Int by mutableIntStateOf(60)
-    private var secondsToRecordFieldState = TextFieldState(initialText = "")
+    private val secondsToRecordFieldState = TextFieldState(initialText = "")
     private val widthFieldState = TextFieldState(initialText = "1920")
     private val heightFieldState = TextFieldState(initialText = "1080")
     private val densityFieldState = TextFieldState(initialText = "1.0")

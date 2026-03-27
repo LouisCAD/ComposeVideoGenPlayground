@@ -1,31 +1,20 @@
 package com.louiscad.playground.compose.videogen
 
+import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.icons.Icons
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.window.ApplicationScope
-import androidx.compose.ui.window.MenuScope
-import androidx.compose.ui.window.Notification
-import androidx.compose.ui.window.Tray
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberTrayState
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.*
 import com.louiscad.playground.compose.videogen.core.rememberIncrementCounter
+import com.louiscad.playground.compose.videogen.extensions.quitOnceComplete
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
 import com.louiscad.playground.compose.videogen.ui.components.MediaGenJobList
 import com.louiscad.playground.compose.videogen.ui.components.VideoGenSetup
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.video_template_24dp
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.compose.resources.painterResource
 
@@ -39,6 +28,7 @@ fun main() = application {
     val defaultScope = rememberCoroutineScope { Dispatchers.Default }
     val mediaGenApp: MediaGenApp = remember { MediaGenAppImpl(defaultScope) }
     MediaGenTray(mediaGenApp)
+    quitOnceComplete { mediaGenApp.isGeneratingMedia.not() }
 }
 
 @Composable
@@ -47,19 +37,21 @@ private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
     var showVideoGenSetup by remember { mutableStateOf(true) }
 
     if (showVideoGenSetup) Window(onCloseRequest = { showVideoGenSetup = false }) {
-        VideoGenSetup(
-            contentToRecord = { sortedTriggerNanos ->
-                ProvideTextStyle(
-                    MaterialTheme.typography.h2.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
-                    )
-                ) {
-                    CounterOverlay(rememberIncrementCounter(sortedTriggerNanos))
-                }
-            },
-            onGenRequested = { mediaGenApp.addComposableToRecord(it) }
-        )
+        WindowDraggableArea {
+            VideoGenSetup(
+                contentToRecord = { sortedTriggerNanos ->
+                    ProvideTextStyle(
+                        MaterialTheme.typography.h2.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
+                    ) {
+                        CounterOverlay(rememberIncrementCounter(sortedTriggerNanos))
+                    }
+                },
+                onGenRequested = { mediaGenApp.addComposableToRecord(it) }
+            )
+        }
     }
 
     var showJobs by remember { mutableStateOf(false) }

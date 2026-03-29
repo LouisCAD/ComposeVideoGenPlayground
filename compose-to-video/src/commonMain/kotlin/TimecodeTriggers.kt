@@ -16,6 +16,9 @@ class TimecodesTrigger(
     val action: (index: Int) -> Unit
 )
 
+/**
+ * Returns an [IntState] that increments from 0 when [withFrameNanos] reaches the values in [sortedTriggersNanos].
+ */
 @Composable
 fun rememberIncrementCounter(sortedTriggersNanos: LongArray): IntState = remember {
     mutableIntStateOf(0)

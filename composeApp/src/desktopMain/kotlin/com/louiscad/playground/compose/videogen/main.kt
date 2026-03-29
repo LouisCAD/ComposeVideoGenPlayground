@@ -1,16 +1,24 @@
 package com.louiscad.playground.compose.videogen
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import com.louiscad.playground.compose.videogen.core.rememberIncrementCounter
 import com.louiscad.playground.compose.videogen.extensions.quitOnceComplete
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
+import com.louiscad.playground.compose.videogen.library.MercedesVsBacchettaPreview
 import com.louiscad.playground.compose.videogen.ui.components.MediaGenJobList
 import com.louiscad.playground.compose.videogen.ui.components.VideoGenSetup
 import composevideogenplayground.composeapp.generated.resources.Res
@@ -29,12 +37,33 @@ fun main() = application {
     val mediaGenApp: MediaGenApp = remember { MediaGenAppImpl(defaultScope) }
     MediaGenTray(mediaGenApp)
     quitOnceComplete { mediaGenApp.isGeneratingMedia.not() }
+    PreviewWindow()
+}
+
+@Composable
+private fun ApplicationScope.PreviewWindow() {
+    val windowState = rememberWindowState(size = DpSize(360.dp, 200.dp))
+    Window(
+        onCloseRequest = ::exitApplication,
+        state = windowState,
+        undecorated = true,
+        alwaysOnTop = true,
+        transparent = true
+    ) {
+        WindowDraggableArea(
+            Modifier.border(1.dp, Color.Cyan)
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                MercedesVsBacchettaPreview()
+            }
+        }
+    }
 }
 
 @Composable
 private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
     val mainWindowState = rememberWindowState()
-    var showVideoGenSetup by remember { mutableStateOf(true) }
+    var showVideoGenSetup by remember { mutableStateOf(false) }
 
     if (showVideoGenSetup) Window(onCloseRequest = { showVideoGenSetup = false }) {
         WindowDraggableArea {

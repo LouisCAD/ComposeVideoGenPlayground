@@ -11,7 +11,11 @@
   - [x] Make it call `addComposableToRecord`
   - [x] Rename it to something okay
   - [x] Make it support any composable
-- [ ] **Create the sport-style score overlay**
+- [x] **Create the sport-style score overlay**
+- [ ] App-data
+  - [ ] Create `appDataDir` extension
+  - [ ] Save last video gen params?
+  - [ ] Convert AndroidX AtomicFile to Kotlin/JVM or Okio Filesystem?
 - [ ] Minimal Main UI (Composable picker)
   - [ ] Design it
   - [ ] Create the UI model(s)

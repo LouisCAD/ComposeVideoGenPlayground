@@ -4,22 +4,20 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import com.louiscad.playground.compose.videogen.core.rememberIncrementCounter
 import com.louiscad.playground.compose.videogen.extensions.quitOnceComplete
-import com.louiscad.playground.compose.videogen.library.CounterOverlay
 import com.louiscad.playground.compose.videogen.library.MercedesVsBacchettaPreview
 import com.louiscad.playground.compose.videogen.ui.components.MediaGenJobList
+import com.louiscad.playground.compose.videogen.ui.components.MediaGeneratorItem
+import com.louiscad.playground.compose.videogen.ui.components.MediaGeneratorList
 import com.louiscad.playground.compose.videogen.ui.components.VideoGenSetup
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.video_template_24dp
@@ -62,24 +60,34 @@ private fun ApplicationScope.PreviewWindow() {
 
 @Composable
 private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
-    val mainWindowState = rememberWindowState()
-    var showVideoGenSetup by remember { mutableStateOf(false) }
+    val mainWindowState = rememberWindowState(size = DpSize(400.dp, 600.dp))
+    var showGeneratorList by remember { mutableStateOf(true) }
+    var videoGenToSetup: MediaGeneratorItem? by remember { mutableStateOf(null) }
 
-    if (showVideoGenSetup) Window(onCloseRequest = { showVideoGenSetup = false }) {
-        WindowDraggableArea {
-            VideoGenSetup(
-                contentToRecord = { sortedTriggerNanos ->
-                    ProvideTextStyle(
-                        MaterialTheme.typography.h2.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Medium
-                        )
-                    ) {
-                        CounterOverlay(rememberIncrementCounter(sortedTriggerNanos))
-                    }
-                },
-                onGenRequested = { mediaGenApp.addComposableToRecord(it) }
-            )
+    if (showGeneratorList) Window(onCloseRequest = { showGeneratorList = false }, state = mainWindowState) {
+        MediaGeneratorList(
+            modifier = Modifier.fillMaxSize(),
+            onItemClicked = { mediaGenItem -> videoGenToSetup = mediaGenItem }
+        )
+    }
+
+    when (val mediaGenItem = videoGenToSetup) {
+        null -> Unit
+        else -> Window(onCloseRequest = { videoGenToSetup = null }) {
+            WindowDraggableArea {
+                VideoGenSetup(
+                    name = mediaGenItem.name,
+                    initialSize = mediaGenItem.defaultSize,
+                    contentToRecord = { sortedTriggerNanos ->
+                        when (val content = mediaGenItem.content) {
+                            is MediaGeneratorItem.Content.CounterBasedVideo -> {
+                                content.content(rememberIncrementCounter(sortedTriggerNanos))
+                            }
+                        }
+                    },
+                    onGenRequested = { mediaGenApp.addComposableToRecord(it) }
+                )
+            }
         }
     }
 
@@ -92,7 +100,7 @@ private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
             trayState.sendNotification(Notification(title = "Yolo?", message = "Hello World!", Notification.Type.Info))
         })
         Item("Show jobs window", enabled = !showJobs, onClick = { showJobs = true })
-        Item("Show video gen window", enabled = !showVideoGenSetup, onClick = { showVideoGenSetup = true })
+        Item("Show video generators", enabled = !showGeneratorList, onClick = { showGeneratorList = true })
         MediaGenAwareQuitItem(mediaGenApp, ::exitApplication)
     }
 }

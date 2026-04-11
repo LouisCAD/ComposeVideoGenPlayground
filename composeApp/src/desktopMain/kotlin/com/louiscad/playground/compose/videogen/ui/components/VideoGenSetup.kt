@@ -40,18 +40,20 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun VideoGenSetup(
+    name: String = "generated-video",
+    initialSize: IntSize = IntSize(1920, 1080),
     contentToRecord: @Composable (sortedTriggerNanos: LongArray) -> Unit,
     onGenRequested: (VideoGenerationRequest) -> Unit
 ) {
 
     val startGeneratingRequest = rememberCallableState<Unit>()
     val outputDirState = remember { mutableStateOf<File?>(null) }
-    val outputNameWithoutExtensionFieldState = remember { TextFieldState(initialText = "generated-video") }
+    val outputNameWithoutExtensionFieldState = remember(name) { TextFieldState(initialText = name) }
     val timeCodesSourceFileState = remember { mutableStateOf<File?>(null) }
     var framesPerSecond: Int by remember { mutableIntStateOf(60) }
     val secondsToRecordFieldState = remember { TextFieldState(initialText = "") }
-    val widthFieldState = remember { TextFieldState(initialText = "1920") }
-    val heightFieldState = remember { TextFieldState(initialText = "1080") }
+    val widthFieldState = remember(initialSize) { TextFieldState(initialText = initialSize.width.toString()) }
+    val heightFieldState = remember(initialSize) { TextFieldState(initialText = initialSize.height.toString()) }
     val densityFieldState = remember { TextFieldState(initialText = "1.0") }
 
     LaunchedEffect(Unit) {

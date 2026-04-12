@@ -19,9 +19,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.louiscad.playground.compose.videogen.components.ProvideRelativeDensity
 import com.louiscad.playground.compose.videogen.core.helpers.StepBase
 import com.louiscad.playground.compose.videogen.core.helpers.rememberAutoAdvancingStepsState
 import kotlin.time.Duration
@@ -29,13 +31,15 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun MercedesVsBacchetta(stepState: State<SportScoreStep>) {
-    SportsStyleScoreOverlay(
-        player1 = Opponent("Mercedes", 0),
-        player2 = Opponent("Bacchetta", 1),
-        stepState = stepState,
-        textColor = Color.Black,
-        borderColor = Color.White
-    )
+    ProvideRelativeDensity(Density(2.5f)) {
+        SportsStyleScoreOverlay(
+            player1 = Opponent("Mercedes", 0),
+            player2 = Opponent("Bacchetta", 1),
+            stepState = stepState,
+            textColor = Color.Black,
+            borderColor = Color.White
+        )
+    }
 }
 
 data class Opponent(

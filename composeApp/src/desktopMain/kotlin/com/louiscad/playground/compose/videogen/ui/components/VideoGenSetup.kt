@@ -42,6 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 fun VideoGenSetup(
     name: String = "generated-video",
     initialSize: IntSize = IntSize(1920, 1080),
+    initialDensity: Float = 1f,
     contentToRecord: @Composable (sortedTriggerNanos: LongArray) -> Unit,
     onGenRequested: (VideoGenerationRequest) -> Unit
 ) {
@@ -54,7 +55,7 @@ fun VideoGenSetup(
     val secondsToRecordFieldState = remember { TextFieldState(initialText = "") }
     val widthFieldState = remember(initialSize) { TextFieldState(initialText = initialSize.width.toString()) }
     val heightFieldState = remember(initialSize) { TextFieldState(initialText = initialSize.height.toString()) }
-    val densityFieldState = remember { TextFieldState(initialText = "1.0") }
+    val densityFieldState = remember(initialDensity) { TextFieldState(initialText = initialDensity.toString()) }
 
     LaunchedEffect(Unit) {
         while (isActive) {

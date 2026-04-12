@@ -57,6 +57,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(projects.featherBorders)
             implementation(projects.composeToVideo)
+            implementation(libs.okio)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

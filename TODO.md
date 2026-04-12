@@ -13,7 +13,7 @@
   - [x] Make it support any composable
 - [x] **Create the sport-style score overlay**
 - [ ] App-data
-  - [ ] Create `appDataDir` extension
+  - [x] Create `appDataDir` extension
   - [ ] Save last video gen params?
   - [ ] Convert AndroidX AtomicFile to Kotlin/JVM or Okio Filesystem?
 - [ ] Minimal Main UI (Composable picker)

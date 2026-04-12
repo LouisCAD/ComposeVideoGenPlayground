@@ -19,6 +19,7 @@ junit = "4.13.2"
 kotlin = "2.3.20"
 kotlinx-coroutines = "1.10.2"
 javacv = "1.5.13"
+okio = "3.16.2"
 splitties = "3.0.0"
 
 [libraries]
@@ -48,6 +49,7 @@ compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.r
 
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 javacv = { module = "org.bytedeco:javacv-platform", version.ref = "javacv"}
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 splitties-coroutines = { module = "com.louiscad.splitties:splitties-coroutines", version.ref = "splitties"}
 
 [plugins]

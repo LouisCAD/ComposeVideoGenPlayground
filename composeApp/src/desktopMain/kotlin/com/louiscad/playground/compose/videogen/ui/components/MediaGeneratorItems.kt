@@ -47,7 +47,19 @@ val mediaGeneratorItems: List<MediaGeneratorItem> = listOf(
         defaultSize = IntSize(width = 720, height = 160),
         defaultDensity = 3f,
         content = MediaGeneratorItem.Content.CounterBasedVideo { counter ->
-            MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+            ProvideRelativeDensity(Density(2.5f)) {
+                MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+            }
+        }
+    ),
+    MediaGeneratorItem(
+        name = "Mercedes vs Bacchetta Scoreboard overlay (full screen)",
+        defaultSize = IntSize(width = 2160, height = 3840),
+        defaultDensity = 1f, //TODO: Do we need an explicit, or inferred preview density?
+        content = MediaGeneratorItem.Content.CounterBasedVideo { counter ->
+            ProvideRelativeDensity(Density(7f)) {
+                MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+            }
         }
     ),
 )

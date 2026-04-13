@@ -2,24 +2,16 @@
 
 package com.louiscad.playground.compose.videogen
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntSize
@@ -47,47 +39,6 @@ fun main() = application {
     val mediaGenApp: MediaGenApp = remember { MediaGenAppImpl(defaultScope) }
     MediaGenTray(mediaGenApp)
     quitOnceComplete { mediaGenApp.isGeneratingMedia.not() }
-}
-
-@Composable
-private fun PreviewWindow(
-    size: DpSize = DpSize(360.dp, 200.dp),
-    onCloseRequest: () -> Unit,
-    onGoRequest: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val windowState = rememberWindowState(size = size, position = WindowPosition.Aligned(Alignment.Center))
-    LaunchedEffect(size) {
-        windowState.size = size
-        windowState.position = WindowPosition.Aligned(Alignment.Center)
-    }
-    Window(
-        onCloseRequest = {}, // Can't be called since decorations are disabled.
-        state = windowState,
-        undecorated = true,
-        alwaysOnTop = true,
-        transparent = true
-    ) {
-        WindowDraggableArea(
-            Modifier.border(1.dp, Color(0xFF_C800FF))
-        ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                IconButton(
-                    onClick = onCloseRequest,
-                    modifier = Modifier.align(Alignment.TopStart)
-                ) {
-                    Icon(AppDefaults.icons.Close, contentDescription = null)
-                }
-                IconButton(
-                    onClick = onGoRequest,
-                    modifier = Modifier.align(Alignment.TopEnd)
-                ) {
-                    Icon(AppDefaults.icons.PlayArrow, contentDescription = null)
-                }
-                content()
-            }
-        }
-    }
 }
 
 @Composable
@@ -153,10 +104,9 @@ private fun ApplicationScope.MediaGenTray(mediaGenApp: MediaGenApp) {
     }
     videoGenToPreview?.let {
         PreviewWindow(
-            size = it.defaultSize.run { DpSize(width.dp, height.dp) },
+            item = it,
             onCloseRequest = { videoGenToPreview = null },
             onGoRequest = { videoGenToSetup = it },
-            content = { it.preview() }
         )
     }
 

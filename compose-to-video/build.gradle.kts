@@ -39,6 +39,7 @@ kotlin {
             dependsOn(skikoMain)
         }
         commonMain.dependencies {
+            api(libs.okio)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material)
@@ -52,6 +53,9 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.javacv)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
         }
     }
 }

@@ -37,6 +37,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.invoke
+import okio.Path.Companion.toOkioPath
 import splitties.coroutines.CallableState
 import splitties.coroutines.call
 import java.io.File
@@ -175,7 +176,7 @@ class VideoGeneratorUiImpl : VideoGeneratorUi() {
             val secondsToRecord = secondsToRecordFieldState.text.takeUnless { it.isEmpty() }?.toString()?.toDouble()
             val timeCodesSourceFile = timeCodesSourceFileState.value ?: continue
             val timeCodes = Dispatchers.IO {
-                readTimecodes(timeCodesSourceFile)
+                readTimecodes(timeCodesSourceFile.toOkioPath(), fps)
             }.ifEmpty { null } ?: continue
 
             nanosOffsets = LongArray(timeCodes.size) { timeCodes[it].toNanosOffset(fps) }

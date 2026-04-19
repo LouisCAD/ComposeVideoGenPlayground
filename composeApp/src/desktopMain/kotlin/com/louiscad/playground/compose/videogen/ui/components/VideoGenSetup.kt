@@ -30,6 +30,7 @@ import com.louiscad.playground.compose.videogen.ui.OutputTransformations
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.invoke
 import kotlinx.coroutines.isActive
+import okio.Path.Companion.toOkioPath
 import splitties.coroutines.call
 import splitties.coroutines.rememberCallableState
 import java.io.File
@@ -68,7 +69,7 @@ fun VideoGenSetup(
             val secondsToRecord = secondsToRecordFieldState.text.takeUnless { it.isEmpty() }?.toString()?.toDouble()
             val timeCodesSourceFile = timeCodesSourceFileState.value ?: continue
             val timeCodes = Dispatchers.IO {
-                readTimecodes(timeCodesSourceFile)
+                readTimecodes(timeCodesSourceFile.toOkioPath(), fps)
             }.ifEmpty { null } ?: continue
 
             val nanosOffsets = LongArray(timeCodes.size) { timeCodes[it].toNanosOffset(fps) }

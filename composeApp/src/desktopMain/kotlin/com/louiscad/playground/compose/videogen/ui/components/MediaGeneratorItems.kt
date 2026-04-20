@@ -111,7 +111,7 @@ fun MediaGeneratorListItem(
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     Spacer(Modifier.height(8.dp))
-    Column(modifier = Modifier.padding(horizontal = 16.dp),) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(text = data.name, style = MaterialTheme.typography.titleMedium)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),

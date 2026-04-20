@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.mapNotNull
 import org.bytedeco.ffmpeg.ffmpeg
 import org.bytedeco.javacpp.Loader
@@ -111,6 +112,9 @@ suspend fun recordComposableAsVideo(
                 println("Failed to parse line: $rawLine")
                 it.printStackTrace()
             }.getOrNull()
+        }.catch {
+            println("Failed to run this command: $conversionCommand")
+            it.printStackTrace()
         }
         convertingWebpsToVideo(progressLines)
     }.also { println("Took $it to build video from WEBPs") }

@@ -5,10 +5,13 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -31,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.invoke
 import kotlinx.coroutines.isActive
 import okio.Path.Companion.toOkioPath
+import splitties.collections.forEachWithIndex
 import splitties.coroutines.call
 import splitties.coroutines.rememberCallableState
 import java.io.File
@@ -101,12 +105,23 @@ fun VideoGenSetup(
             heightFieldState = heightFieldState,
             densityFieldState = densityFieldState
         )
-        Text("${MaterialTheme.typography.h2.fontSize}")
+        Text("${MaterialTheme.typography.headlineMedium.fontSize}")
         SecondsToRecordLine(secondsToRecordFieldState)
         NameWithoutExtensionField(outputNameWithoutExtensionFieldState)
         FileDragNDropTarget(state = outputDirState, label = "output dir", dir = true)
         FileDragNDropTarget(state = timeCodesSourceFileState, label = "timecodes")
-        Text(text = "fps: $framesPerSecond (FYI)")
+        Text("fps", style = MaterialTheme.typography.labelMedium)
+        val fpsOptions = remember { listOf(30, 60) }
+        MultiChoiceSegmentedButtonRow {
+            fpsOptions.forEachWithIndex { index, fps ->
+                SegmentedButton(
+                    checked = framesPerSecond == fps,
+                    onCheckedChange = { framesPerSecond = fps },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = fpsOptions.size),
+                    label = { Text(fps.toString()) }
+                )
+            }
+        }
         Button(
             onClick = startGeneratingRequest,
             enabled = startGeneratingRequest.isAwaitingCall

@@ -99,7 +99,7 @@ suspend fun recordComposableAsVideo(
         add("-alpha_bits 16")
         add("-r $framesPerSecond")
         add("-movflags +faststart")
-        add(outputFileRelativePath)
+        add("\"$outputFileRelativePath\"")
     }.joinToString(separator = " ")
     measureTime {
         val progressLines = conversionCommand.commandExecutionLines(

@@ -23,6 +23,9 @@ data class FfmpegProgressLine(
          */
         fun parseOrNull(line: String): FfmpegProgressLine? {
             if (line.startsWith("frame=").not()) return null
+            if (line.startsWith("frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A")) {
+                return null
+            }
             val rawValues = line.replace(
                 regex = Regex("=\\s*"),
                 replacement = "="
@@ -38,7 +41,7 @@ data class FfmpegProgressLine(
                 }!!.replace("KiB", "").toLong(),
                 time = rawValues.remove("time")!!.let { timeText ->
                     Time(
-                        hours = timeText.substring(0, 2).toInt(), //TODO: Fix/handle when we get "N/"
+                        hours = timeText.substring(0, 2).toInt(),
                         minutes = timeText.substring(3, 5).toInt(),
                         seconds = timeText.substring(6).toDouble()
                     )

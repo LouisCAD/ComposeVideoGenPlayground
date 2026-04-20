@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.IntState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -58,8 +59,10 @@ val mediaGeneratorItems: List<MediaGeneratorItem> = listOf(
         defaultDensity = 1f, //TODO: Do we need an explicit, or inferred preview density?
         previewScale = 1 / 8f,
         content = MediaGeneratorItem.Content.CounterBasedVideo { counter ->
-            ProvideRelativeDensity(Density(7f)) {
-                MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+            Box(Modifier.fillMaxSize(), contentAlignment = BiasAlignment(horizontalBias = 0f, verticalBias = -.8f)) {
+                ProvideRelativeDensity(Density(7f)) {
+                    MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+                }
             }
         }
     ),

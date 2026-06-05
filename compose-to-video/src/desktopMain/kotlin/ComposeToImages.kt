@@ -3,10 +3,8 @@
 package com.louiscad.playground.compose.videogen.core
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.use
 import com.louiscad.playground.compose.videogen.core.extensions.coroutines.collectParallel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
@@ -33,6 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 import kotlin.use
 import kotlinx.coroutines.CompletableDeferred
+import org.jetbrains.skia.BlendMode
+import org.jetbrains.skia.Paint
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.SamplingMode
+import org.jetbrains.skia.Surface
 
 suspend fun recordComposableAsImages(
     size: IntSize,
@@ -93,6 +96,7 @@ private fun ImageComposeScene.images(
     var frameIndex = 0
     val oneSecondNanos = 1.seconds.inWholeNanoseconds
     var currentSecond = 0
+    var lastImage: Image? = null
     while (true) {
         currentCoroutineContext().ensureActive()
         val nanosForFrameIndex: Long = oneSecondNanos * frameIndex / framesPerSecond
@@ -102,7 +106,20 @@ private fun ImageComposeScene.images(
         // See this: https://kotlinlang.slack.com/archives/C01D6HTPATV/p1746482154335809
         render(currentNanos)
         yield()
-        emit(render(currentNanos))
+        val newImage = render(currentNanos)
+        emit(newImage)
+        val image = if (lastImage != null && areGpuImagesIdentical(
+                imageA = lastImage,
+                imageB = newImage
+            )
+        ) {
+            newImage.close()
+            lastImage
+        } else {
+            newImage
+        }
+        lastImage = image
+        emit(image)
         frameIndex++
         if (frameIndex == framesPerSecond) {
             frameIndex = 0
@@ -135,19 +152,107 @@ private suspend fun Flow<Image>.recordAllParallelizedInto(
         durationSummaryCompletable.complete(summary)
     }
 
-    generatedImages.collectParallel(maxParallelism = 64) { (index, skiaImage) ->
-        skiaImage.use { image ->
-            val webpData: Data
-            val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
-            progressListener.onFrameEncoded(index, encodingDuration)
-            webpData.use { webpData ->
-                val bytes: ByteArray = webpData.bytes
-                Dispatchers.IO {
-                    val writeDuration = measureTime { outputDir.resolve("$index.webp").writeBytes(bytes) }
-                    progressListener.onFrameWritten(index, writeDuration)
+//    generatedImages.recordEachImageInto(outputDir, progressListener)
+    generatedImages.asRanges().recordImagesInto(outputDir, progressListener)
+    durationSummaryCompletable.await()
+}
+
+private suspend fun Flow<IndexedValue<Image>>.recordEachImageInto(
+    outputDir: File,
+    progressListener: FramesRecordingProgressListener
+) = collectParallel(maxParallelism = 64) { (index, skiaImage) ->
+    skiaImage.use { image ->
+        val webpData: Data
+        val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
+        progressListener.onFrameEncoded(index, encodingDuration)
+        webpData.use { webpData ->
+            val bytes: ByteArray = webpData.bytes
+            Dispatchers.IO {
+                val writeDuration = measureTime { outputDir.resolve("$index.webp").writeBytes(bytes) }
+                progressListener.onFrameWritten(index, writeDuration)
+            }
+        }
+    }
+}
+
+private suspend fun Flow<Pair<IntRange, Image>>.recordImagesInto(
+    outputDir: File,
+    progressListener: FramesRecordingProgressListener
+) = collectParallel(maxParallelism = 64) { (indexRange, skiaImage) ->
+    skiaImage.use { image ->
+        val webpData: Data
+        val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
+        progressListener.onFramesEncoded(indexRange, encodingDuration)
+        webpData.use { webpData ->
+            val bytes: ByteArray = webpData.bytes
+            Dispatchers.IO {
+                val firstIndex = indexRange.first
+                val firstImageFile = outputDir.resolve("$firstIndex.webp")
+                val writeDuration = measureTime { firstImageFile.writeBytes(bytes) }
+                progressListener.onFrameWritten(firstIndex, writeDuration)
+                for (index in (indexRange.first + 1)..indexRange.last) {
+                    val copyDuration = measureTime {
+                        firstImageFile.copyTo(outputDir.resolve("$index.webp"))
+                    }
+                    progressListener.onFrameWritten(index, copyDuration)
+
                 }
             }
         }
     }
-    durationSummaryCompletable.await()
+}
+
+private fun <T> Flow<IndexedValue<T>>.asRanges(): Flow<Pair<IntRange, T>> = flow {
+    var lastWindowStartIndex = -1
+    var lastIndex = -1
+    var lastElement: T? = null
+    collect { (index, newElement) ->
+        if (newElement != lastElement) {
+            lastElement?.let { previousWindowElement ->
+                emit((lastWindowStartIndex until index) to previousWindowElement)
+            }
+            lastWindowStartIndex = index
+            lastElement = newElement
+        }
+        lastIndex = index
+    }
+    emit((lastWindowStartIndex .. lastIndex) to (lastElement ?: return@flow))
+}
+
+fun areGpuImagesIdentical(imageA: Image, imageB: Image): Boolean {
+    if (imageA.width != imageB.width || imageA.height != imageB.height) return false
+
+    // 1. Create a GPU surface matching the image size
+    val diffSurface = Surface.makeRasterN32Premul(imageA.width, imageA.height)
+    val canvas = diffSurface.canvas
+
+    // 2. Draw Image A
+    canvas.drawImage(imageA, 0f, 0f)
+
+    // 3. Draw Image B on top using a Difference blend mode
+    val paint = Paint().apply {
+        blendMode = BlendMode.DIFFERENCE
+    }
+    canvas.drawImage(imageB, 0f, 0f, paint)
+
+    // 4. Downscale the result to a 1x1 surface to let the GPU handle the math reduction
+    val reductionSurface = Surface.makeRasterN32Premul(10, 10)
+
+    val diffImage = diffSurface.makeImageSnapshot()
+    // SamplingMode.LINEAR forces the GPU to average all pixels during the downscale
+    reductionSurface.canvas.drawImageRect(
+        image = diffImage,
+        src = Rect.makeWH(diffImage.width.toFloat(), diffImage.height.toFloat()),
+        dst = Rect.makeWH(10f, 10f),
+        samplingMode = SamplingMode.LINEAR,
+        paint = null,
+        strict = true
+    )
+
+    // 5. Read back exactly 4 bytes (1 pixel) instead of megabytes of data
+    val singlePixelImage = reductionSurface.makeImageSnapshot()
+    val bytes = singlePixelImage.peekPixels()?.buffer?.bytes ?: return false
+
+    // If the 1x1 pixel is completely black/transparent, the images are identical
+    return bytes.all { it == 0.toByte() }
 }

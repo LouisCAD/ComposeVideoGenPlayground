@@ -18,10 +18,12 @@ import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.*
 import com.louiscad.playground.compose.videogen.core.rememberIncrementCounter
+import com.louiscad.playground.compose.videogen.core.rememberTextTrigger
 import com.louiscad.playground.compose.videogen.extensions.quitOnceComplete
 import com.louiscad.playground.compose.videogen.ui.components.MediaGenJobList
 import com.louiscad.playground.compose.videogen.ui.components.MediaGeneratorItem
 import com.louiscad.playground.compose.videogen.ui.components.MediaGeneratorList
+import com.louiscad.playground.compose.videogen.ui.components.SubtitlesVideoGenSetup
 import com.louiscad.playground.compose.videogen.ui.components.VideoGenSetup
 import composevideogenplayground.composeapp.generated.resources.Res
 import composevideogenplayground.composeapp.generated.resources.video_template_24dp
@@ -68,6 +70,16 @@ private fun MediaGenSetup(mediaGenApp: MediaGenApp, item: MediaGeneratorItem) {
             initialDensity = 1f,
             contentToRecord = { sortedTriggerNanos ->
                 content.content(rememberIncrementCounter(sortedTriggerNanos))
+            },
+            onGenRequested = { mediaGenApp.addComposableToRecord(it) }
+        )
+        is MediaGeneratorItem.Content.TextBasedVideo -> SubtitlesVideoGenSetup(
+            name = item.name,
+            initialSize = (item.defaultSize.toSize() * item.defaultDensity).roundToIntSize(),
+            initialDensity = 1f,
+            noAnimations = content.noAnimations,
+            contentToRecord = { subtitlesWithNanosOffsets: List<Pair<LongRange, String>> ->
+                content.content(rememberTextTrigger(subtitlesWithNanosOffsets))
             },
             onGenRequested = { mediaGenApp.addComposableToRecord(it) }
         )

@@ -1,5 +1,7 @@
 package com.louiscad.playground.compose.videogen.ui.components
 
+import androidx.collection.LongList
+import androidx.collection.buildLongList
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.louiscad.playground.compose.videogen.DragNDropTarget
 import com.louiscad.playground.compose.videogen.VideoGenerationRequest
+import com.louiscad.playground.compose.videogen.core.readSubtitles
 import com.louiscad.playground.compose.videogen.core.readTimecodes
 import com.louiscad.playground.compose.videogen.core.toNanosOffset
 import com.louiscad.playground.compose.videogen.ui.InputTransformations
@@ -33,6 +36,7 @@ import com.louiscad.playground.compose.videogen.ui.OutputTransformations
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.invoke
 import kotlinx.coroutines.isActive
+import okio.Path
 import okio.Path.Companion.toOkioPath
 import splitties.collections.forEachWithIndex
 import splitties.coroutines.call
@@ -40,6 +44,7 @@ import splitties.coroutines.rememberCallableState
 import java.io.File
 import java.net.URI
 import java.nio.file.Paths
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -51,11 +56,100 @@ fun VideoGenSetup(
     contentToRecord: @Composable (sortedTriggerNanos: LongArray) -> Unit,
     onGenRequested: (VideoGenerationRequest) -> Unit
 ) {
+    GenericVideoGenSetup(
+        name = name,
+        initialSize = initialSize,
+        initialDensity = initialDensity,
+        inputConfig = object : VideoGenInputConfig<LongArray>("timecodes") {
+            override suspend fun readInputData(
+                inputDataPath: Path,
+                fps: Int
+            ): VideoGenInput<LongArray>? {
+                val timeCodes = Dispatchers.IO {
+                    readTimecodes(inputDataPath, fps)
+                }.ifEmpty { null } ?: return null
+                val nanosOffsets = LongArray(timeCodes.size) { timeCodes[it].toNanosOffset(fps) }
+                println("WE HAVE ${nanosOffsets.size} timecodes")
+                return VideoGenInput(
+                    defaultDuration = nanosOffsets.last().nanoseconds,
+                    inputData = nanosOffsets
+                )
+            }
+        },
+        contentToRecord = contentToRecord,
+        onGenRequested = onGenRequested
+    )
+}
+
+@Composable
+fun SubtitlesVideoGenSetup(
+    name: String = "generated-video",
+    initialSize: IntSize = IntSize(1920, 1080),
+    initialDensity: Float = 1f,
+    noAnimations: Boolean,
+    contentToRecord: @Composable (subtitlesWithNanosOffsets: List<Pair<LongRange, String>>) -> Unit,
+    onGenRequested: (VideoGenerationRequest) -> Unit,
+) {
+    GenericVideoGenSetup(
+        name = name,
+        initialSize = initialSize,
+        initialDensity = initialDensity,
+        inputConfig = object : VideoGenInputConfig<List<Pair<LongRange, String>>>("subtitle file") {
+            override suspend fun readInputData(
+                inputDataPath: Path,
+                fps: Int
+            ): VideoGenInput<List<Pair<LongRange, String>>>? {
+                val subtitleItems = Dispatchers.IO {
+                    readSubtitles(inputDataPath, fps)
+                }.ifEmpty { null } ?: return null
+                val subtitlesWithNanosOffsets = subtitleItems.map {
+                    it.startTime.toNanosOffset(fps)..it.endTime.toNanosOffset(fps) to it.text
+                }
+                return VideoGenInput(
+                    defaultDuration = subtitlesWithNanosOffsets.last().first.last.nanoseconds,
+                    knownAnimationFramesNanos = if (noAnimations) {
+                        buildLongList {
+                            subtitlesWithNanosOffsets.forEach { (offsets, _) ->
+                                add(offsets.first)
+                                add(offsets.last + 1L)
+                            }
+                        }
+                    } else null,
+                    inputData = subtitlesWithNanosOffsets,
+                )
+            }
+        },
+        contentToRecord = contentToRecord,
+        onGenRequested = onGenRequested
+    )
+}
+
+private class VideoGenInput<T>(
+    val defaultDuration: Duration,
+    val knownAnimationFramesNanos: LongList? = null,
+    val inputData: T
+)
+
+private abstract class VideoGenInputConfig<T>(
+    val inputDataFileTitle: String,
+) {
+    abstract suspend fun readInputData(inputDataPath: Path, fps: Int): VideoGenInput<T>?
+}
+
+@Composable
+private fun <T> GenericVideoGenSetup(
+    name: String = "generated-video",
+    initialSize: IntSize = IntSize(1920, 1080),
+    initialDensity: Float = 1f,
+    inputConfig: VideoGenInputConfig<T>,
+    contentToRecord: @Composable (T) -> Unit,
+    onGenRequested: (VideoGenerationRequest) -> Unit
+) {
 
     val startGeneratingRequest = rememberCallableState<Unit>()
     val outputDirState = remember { mutableStateOf<File?>(null) }
     val outputNameWithoutExtensionFieldState = remember(name) { TextFieldState(initialText = name) }
-    val timeCodesSourceFileState = remember { mutableStateOf<File?>(null) }
+    val inputDataFileState = remember { mutableStateOf<File?>(null) }
     var framesPerSecond: Int by remember { mutableIntStateOf(60) }
     val secondsToRecordFieldState = remember { TextFieldState(initialText = "") }
     val widthFieldState = remember(initialSize) { TextFieldState(initialText = initialSize.width.toString()) }
@@ -71,14 +165,9 @@ fun VideoGenSetup(
             val width = widthFieldState.text.toString().toInt()
             val height = heightFieldState.text.toString().toInt()
             val secondsToRecord = secondsToRecordFieldState.text.takeUnless { it.isEmpty() }?.toString()?.toDouble()
-            val timeCodesSourceFile = timeCodesSourceFileState.value ?: continue
-            val timeCodes = Dispatchers.IO {
-                readTimecodes(timeCodesSourceFile.toOkioPath(), fps)
-            }.ifEmpty { null } ?: continue
-
-            val nanosOffsets = LongArray(timeCodes.size) { timeCodes[it].toNanosOffset(fps) }
-            println("WE HAVE ${nanosOffsets.size} timecodes")
-            val outputDuration = secondsToRecord?.seconds ?: nanosOffsets.last().nanoseconds
+            val inputDataFile = inputDataFileState.value ?: continue
+            val inputData = inputConfig.readInputData(inputDataFile.toOkioPath(), fps) ?: continue
+            val outputDuration = secondsToRecord?.seconds ?: inputData.defaultDuration
             val density = Density(_density)
             val outputFileNameWithoutExtension = outputNameWithoutExtensionFieldState.text.toString()
             val request = VideoGenerationRequest(
@@ -88,7 +177,8 @@ fun VideoGenSetup(
                 density = density,
                 duration = outputDuration,
                 framesPerSecond = fps,
-                getContent = { { contentToRecord(nanosOffsets) } }
+                frameChangesNanos = inputData.knownAnimationFramesNanos,
+                getContent = { { contentToRecord(inputData.inputData) } }
             )
             onGenRequested(request)
         }
@@ -109,7 +199,7 @@ fun VideoGenSetup(
         SecondsToRecordLine(secondsToRecordFieldState)
         NameWithoutExtensionField(outputNameWithoutExtensionFieldState)
         FileDragNDropTarget(state = outputDirState, label = "output dir", dir = true)
-        FileDragNDropTarget(state = timeCodesSourceFileState, label = "timecodes")
+        FileDragNDropTarget(state = inputDataFileState, label = inputConfig.inputDataFileTitle)
         Text("fps", style = MaterialTheme.typography.labelMedium)
         val fpsOptions = remember { listOf(30, 60) }
         MultiChoiceSegmentedButtonRow {

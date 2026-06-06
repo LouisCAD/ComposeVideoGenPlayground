@@ -14,4 +14,7 @@ import kotlinx.coroutines.Dispatchers
 fun interface FramesRecordingProgressListener {
     fun onFrameEncoded(index: Int, duration: Duration) = Unit
     fun onFrameWritten(index: Int, duration: Duration)
+    fun onFramesEncoded(indexRange: IntRange, duration: Duration) {
+        indexRange.forEach { onFrameEncoded(it, duration) }
+    }
 }

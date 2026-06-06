@@ -1,5 +1,6 @@
 package com.louiscad.playground.compose.videogen
 
+import androidx.collection.LongList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -13,5 +14,6 @@ data class VideoGenerationRequest(
     val density: Density,
     val framesPerSecond: Int,
     val duration: Duration,
+    val frameChangesNanos: LongList? = null,
     val getContent: suspend () -> (@Composable () -> Unit),
 )

@@ -2,6 +2,7 @@
 
 package com.louiscad.playground.compose.videogen.core
 
+import androidx.collection.LongList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -39,6 +40,7 @@ suspend fun recordComposableAsVideo(
     duration: Duration,
     progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
     convertingWebpsToVideo: suspend (terminalOutput: Flow<FfmpegProgressLine>) -> Unit,
+    frameChangesNanos: LongList? = null,
     content: @Composable () -> Unit
 ) {
     val outputFileRelativePath = "$outputFileNameWithoutExtension.mov"
@@ -68,6 +70,7 @@ suspend fun recordComposableAsVideo(
             outputDir = tmpDirForWebps,
             duration = duration,
             progressHandler = progressHandler,
+            frameChangesNanos = frameChangesNanos,
             content = content
         )
     }

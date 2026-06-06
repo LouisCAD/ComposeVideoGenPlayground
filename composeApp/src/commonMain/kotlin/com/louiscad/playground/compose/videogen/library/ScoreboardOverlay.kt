@@ -74,7 +74,11 @@ private fun SportsStyleScoreOverlay(
             color = textColor,
             fontWeight = FontWeight.Bold,
         )
-        val scoreTextStyle = MaterialTheme.typography.bodyMedium.copy(color = textColor, fontSize = 20.sp)
+        val scoreTextStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = textColor,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
 
         val scoresAlpha by animateFloatAsState(targetValue = if (step.isAtLeast(SportScoreStep.ShowScore)) 1f else 0f)
         val middleSeparatorAlpha by animateFloatAsState(targetValue = if (step.isAtLeast(SportScoreStep.Split)) 1f else 0f)

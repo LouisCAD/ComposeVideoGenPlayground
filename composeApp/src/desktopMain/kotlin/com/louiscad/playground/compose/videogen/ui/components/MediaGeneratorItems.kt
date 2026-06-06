@@ -12,6 +12,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.IntState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
@@ -23,11 +24,13 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.louiscad.playground.compose.videogen.components.ProvideRelativeDensity
 import com.louiscad.playground.compose.videogen.core.helpers.rememberAutoAdvancingNumber
+import com.louiscad.playground.compose.videogen.core.helpers.rememberAutoAdvancingRandomText
 import com.louiscad.playground.compose.videogen.core.helpers.rememberAutoAdvancingStepsState
 import com.louiscad.playground.compose.videogen.core.helpers.toStepState
 import com.louiscad.playground.compose.videogen.extensions.toAspectRatio
 import com.louiscad.playground.compose.videogen.library.CounterOverlay
 import com.louiscad.playground.compose.videogen.library.MercedesVsBacchetta
+import com.louiscad.playground.compose.videogen.library.SubtitleOverlay
 import kotlin.time.Duration.Companion.seconds
 
 val mediaGeneratorItems: List<MediaGeneratorItem> = listOf(
@@ -56,12 +59,27 @@ val mediaGeneratorItems: List<MediaGeneratorItem> = listOf(
     MediaGeneratorItem(
         name = "Mercedes vs Bacchetta Scoreboard overlay (full screen)",
         defaultSize = IntSize(width = 2160, height = 3840),
-        defaultDensity = 1f, //TODO: Do we need an explicit, or inferred preview density?
-        previewScale = 1 / 8f,
+        defaultDensity = 1f,
+        previewScale = 1 / 8f, //TODO: Do we need an explicit, or inferred preview density?
         content = MediaGeneratorItem.Content.CounterBasedVideo { counter ->
             Box(Modifier.fillMaxSize(), contentAlignment = BiasAlignment(horizontalBias = 0f, verticalBias = -.8f)) {
                 ProvideRelativeDensity(Density(7f)) {
                     MercedesVsBacchetta(counter?.toStepState() ?: rememberAutoAdvancingStepsState())
+                }
+            }
+        }
+    ),
+    MediaGeneratorItem(
+        name = "Basic subtitles",
+        defaultSize = IntSize(width = 2160, height = 960),
+        defaultDensity = 1f,
+        previewScale = 1 / 8f, //TODO: Do we need an explicit, or inferred preview density?
+        content = MediaGeneratorItem.Content.TextBasedVideo(noAnimations = true) { textState ->
+            Box(Modifier.fillMaxSize(), contentAlignment = BiasAlignment(horizontalBias = 0f, verticalBias = 0f)) {
+                ProvideRelativeDensity(Density(10f)) {
+                    val state = textState ?: rememberAutoAdvancingRandomText(.5.seconds)
+                    val text = state.value
+                    text?.let { SubtitleOverlay(text = it) }
                 }
             }
         }
@@ -78,11 +96,16 @@ data class MediaGeneratorItem(
 
     val preview: @Composable () -> Unit = when (content) {
         is Content.CounterBasedVideo -> { -> content.content(null) }
+        is Content.TextBasedVideo -> { -> content.content(null) }
     }
 
     sealed interface Content {
         data class CounterBasedVideo(
             val content: @Composable (counter: IntState?) -> Unit
+        ) : Content
+        data class TextBasedVideo(
+            val noAnimations: Boolean,
+            val content: @Composable (textState: State<String?>?) -> Unit,
         ) : Content
         //TODO: Support still images, music…
     }

@@ -42,7 +42,7 @@ suspend fun handleVideoGeneration(ui: VideoGeneratorUi): Nothing = repeatWhileAc
 suspend fun recordComposableAsVideo(
     request: VideoGenerationRequest,
     progressHandler: FramesWritingProgressHandler,
-    progressChannel: SendChannel<FfmpegProgressLine>
+    progressChannel: SendChannel<FfmpegProgressLine>,
 ) {
     recordComposableAsVideo(
         size = request.size,
@@ -57,6 +57,7 @@ suspend fun recordComposableAsVideo(
                 progressChannel.send(progressLine)
             }
         },
+        frameChangesNanos = request.frameChangesNanos,
         content = request.getContent()
     )
 }

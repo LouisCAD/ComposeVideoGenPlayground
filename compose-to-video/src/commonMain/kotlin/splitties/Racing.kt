@@ -77,9 +77,7 @@ inline fun <T> RacingScope<T>.launchRacer(noinline block: suspend CoroutineScope
  * For races where the number of racers is static, you can use the slightly more efficient [raceOf]
  * function and directly pass the cancellable lambdas you want to race concurrently.
  */
-@OptIn(ExperimentalTypeInference::class)
 suspend fun <T> race(
-    @BuilderInference
     builder: suspend RacingScope<T>.() -> Unit
 ): T = coroutineScope {
     @Suppress("RemoveExplicitTypeArguments")

@@ -2,6 +2,7 @@
 
 package com.louiscad.playground.compose.videogen.core
 
+import androidx.collection.LongList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
@@ -41,6 +42,7 @@ suspend fun recordComposableAsImages(
     outputDir: File,
     duration: Duration,
     progressHandler: FramesWritingProgressHandler = FramesWritingProgressHandler { _, _ -> awaitCancellation() },
+    frameChangesNanos: LongList?,
     content: @Composable () -> Unit
 ): FramesRecordingDurationSummary {
 
@@ -66,7 +68,11 @@ suspend fun recordComposableAsImages(
             coroutineContext = coroutineContext[ContinuationInterceptor]!!,
             content = content
         ).use { scene ->
-            val images = scene.images(cutAt = duration, framesPerSecond = framesPerSecond)
+            val images = scene.images(
+                cutAt = duration,
+                framesPerSecond = framesPerSecond,
+                frameChangesNanos = frameChangesNanos,
+            )
             val imagesWrittenCount = AtomicInt(0)
             Dispatchers.Default {
                 raceOf({
@@ -87,22 +93,44 @@ suspend fun recordComposableAsImages(
 
 private fun ImageComposeScene.images(
     cutAt: Duration,
-    framesPerSecond: Int
+    framesPerSecond: Int,
+    frameChangesNanos: LongList?,
 ): Flow<Image> = flow {
     val limitNanos = cutAt.inWholeNanoseconds
     var frameIndex = 0
     val oneSecondNanos = 1.seconds.inWholeNanoseconds
     var currentSecond = 0
+    var lastImage: Image? = null
+    var nextIndexOfFrameChange = 0
     while (true) {
         currentCoroutineContext().ensureActive()
         val nanosForFrameIndex: Long = oneSecondNanos * frameIndex / framesPerSecond
         val currentNanos = currentSecond.seconds.inWholeNanoseconds + nanosForFrameIndex
         if (currentNanos >= limitNanos) return@flow
+
+        val nextFrameChangeNanos = frameChangesNanos?.takeUnless {
+            nextIndexOfFrameChange > it.lastIndex
+        }?.get(nextIndexOfFrameChange)
+
         // We render twice because the first render is sometimes not settled as it should.
         // See this: https://kotlinlang.slack.com/archives/C01D6HTPATV/p1746482154335809
-        render(currentNanos)
-        yield()
-        emit(render(currentNanos))
+
+        val image: Image = if (lastImage != null && nextFrameChangeNanos != null) {
+            if (currentNanos >= nextFrameChangeNanos) {
+                nextIndexOfFrameChange++
+                render(currentNanos).close()
+                yield()
+                render(currentNanos)
+            } else {
+                lastImage
+            }
+        } else {
+            render(currentNanos).close()
+            yield()
+            render(currentNanos)
+        }
+        lastImage = image
+        emit(image)
         frameIndex++
         if (frameIndex == framesPerSecond) {
             frameIndex = 0
@@ -135,19 +163,68 @@ private suspend fun Flow<Image>.recordAllParallelizedInto(
         durationSummaryCompletable.complete(summary)
     }
 
-    generatedImages.collectParallel(maxParallelism = 64) { (index, skiaImage) ->
-        skiaImage.use { image ->
-            val webpData: Data
-            val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
-            progressListener.onFrameEncoded(index, encodingDuration)
-            webpData.use { webpData ->
-                val bytes: ByteArray = webpData.bytes
-                Dispatchers.IO {
-                    val writeDuration = measureTime { outputDir.resolve("$index.webp").writeBytes(bytes) }
-                    progressListener.onFrameWritten(index, writeDuration)
+    generatedImages.asRanges().recordImagesInto(outputDir, progressListener)
+    durationSummaryCompletable.await()
+}
+
+private suspend fun Flow<IndexedValue<Image>>.recordEachImageInto(
+    outputDir: File,
+    progressListener: FramesRecordingProgressListener
+) = collectParallel(maxParallelism = 64) { (index, skiaImage) ->
+    skiaImage.use { image ->
+        val webpData: Data
+        val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
+        progressListener.onFrameEncoded(index, encodingDuration)
+        webpData.use { webpData ->
+            val bytes: ByteArray = webpData.bytes
+            Dispatchers.IO {
+                val writeDuration = measureTime { outputDir.resolve("$index.webp").writeBytes(bytes) }
+                progressListener.onFrameWritten(index, writeDuration)
+            }
+        }
+    }
+}
+
+private suspend fun Flow<Pair<IntRange, Image>>.recordImagesInto(
+    outputDir: File,
+    progressListener: FramesRecordingProgressListener
+) = collectParallel(maxParallelism = 64) { (indexRange, skiaImage) ->
+    skiaImage.use { image ->
+        val webpData: Data
+        val encodingDuration = measureTime { webpData = image.encodeToData(EncodedImageFormat.WEBP)!! }
+        progressListener.onFramesEncoded(indexRange, encodingDuration)
+        webpData.use { webpData ->
+            val bytes: ByteArray = webpData.bytes
+            Dispatchers.IO {
+                val firstIndex = indexRange.first
+                val firstImageFile = outputDir.resolve("$firstIndex.webp")
+                val writeDuration = measureTime { firstImageFile.writeBytes(bytes) }
+                progressListener.onFrameWritten(firstIndex, writeDuration)
+                for (index in (indexRange.first + 1)..indexRange.last) {
+                    val copyDuration = measureTime {
+                        firstImageFile.copyTo(outputDir.resolve("$index.webp"))
+                    }
+                    progressListener.onFrameWritten(index, copyDuration)
+
                 }
             }
         }
     }
-    durationSummaryCompletable.await()
+}
+
+private fun <T> Flow<IndexedValue<T>>.asRanges(): Flow<Pair<IntRange, T>> = flow {
+    var lastWindowStartIndex = -1
+    var lastIndex = -1
+    var lastElement: T? = null
+    collect { (index, newElement) ->
+        if (newElement != lastElement) {
+            lastElement?.let { previousWindowElement ->
+                emit((lastWindowStartIndex until index) to previousWindowElement)
+            }
+            lastWindowStartIndex = index
+            lastElement = newElement
+        }
+        lastIndex = index
+    }
+    emit((lastWindowStartIndex .. lastIndex) to (lastElement ?: return@flow))
 }
